@@ -1,7 +1,7 @@
 """Task 1 — deterministic, seeded Nykaa order dataset.
 
-Design choices (also documented in README.md; seed 42 gives Apparel 7, Electronics 7,
-Home 10, Footwear 12, Beauty 12 -- report the ACHIEVED counts, not the weights):
+Design choices (also in README.md). With seed 42 the achieved category counts are Apparel 7,
+Electronics 7, Home 10, Footwear 12, Beauty 12; the weights are only expectations:
   seed=42, N=48,
   category weights Apparel .30 / Electronics .18 / Home .16 / Footwear .16 / Beauty .20,
   status weights Placed .25 / Shipped .25 / Delivered .30 / Returned .10 / Refunded .10,
@@ -14,7 +14,7 @@ import random
 from collections import Counter
 from typing import Any
 
-# ---- the frozen design (the grader reproduces from JUST these) -------------
+# ---- the dataset design: these values alone reproduce the dataset -----------
 SEED = 42
 N_ORDERS = 48
 CATEGORIES = ["Apparel", "Electronics", "Home", "Footwear", "Beauty"]
@@ -36,7 +36,7 @@ def _build_orders() -> list[dict[str, Any]]:
     rng = random.Random(SEED)
     orders: list[dict[str, Any]] = []
     for i in range(N_ORDERS):
-        # NOTE: draw order is part of the contract. Do not reorder these calls.
+        # The draw order is fixed: reordering these calls would produce a different dataset.
         category = rng.choices(CATEGORIES, weights=CATEGORY_WEIGHTS, k=1)[0]
         status = rng.choices(STATUSES, weights=STATUS_WEIGHTS, k=1)[0]
         value = rng.randint(AMOUNT_MIN_INR, AMOUNT_MAX_INR)
@@ -55,9 +55,6 @@ def _build_orders() -> list[dict[str, Any]]:
 
 
 ORDERS: list[dict[str, Any]] = _build_orders()
-
-# O(1) lookup used by tools.check_order_status (Task 6).
-ORDERS_BY_ID: dict[str, dict[str, Any]] = {o["record_id"]: o for o in ORDERS}
 
 
 # ---------------------------------------------------------------------------

@@ -17,7 +17,7 @@ Price-range reasoning: Rs.199 to Rs.49,999 spans low-cost beauty and apparel ite
 
 Nothing is hand-edited; changing the seed re-rolls everything.
 
-Reproduce: `python dataset.py` (prints the report below).
+Reproduce: `python dataset.py ('prints the report below).
 
 Output:
 
@@ -42,3 +42,24 @@ Output:
     RESULT: PASS
 
     First record: {'record_id': 'ORD0001', 'category': 'Home', 'status': 'Placed', 'order_value_inr': 18223, 'days_since_created': 7, 'delayed_shipment': False}
+
+Task-2. Write your knowledge base : checks 
+----------------------------------------------------------
+Loads the folder: it reads every .md file in sorted order and skips # title lines. It joins the text into one paragraph and reads the files as UTF-8, so ₹ stays intact.
+Assigns ids: the file name sets the id and topic, so 01_return_window_by_category.md becomes doc_id = "kb-01" with topic = "return_window_by_category"-> for use in later task. 
+Catches mistakes: a badly named file, an empty file or a repeated number stops it with a clear error.
+self-check: python knowledge_base.py checks that there are at least 12 docs with 2–5 sentences each, and prints PASS or FAIL
+output:-
+12 documents loaded from knowledge_base/
+  01_return_window_by_category.md                -> kb-01  5 sentences  OK
+  02_cod_refund_timelines.md                     -> kb-02  5 sentences  OK
+  03_delivery_slas.md                            -> kb-03  5 sentences  OK
+  04_reverse_pickup_eligibility.md               -> kb-04  5 sentences  OK
+  05_warranty_terms_by_category.md               -> kb-05  5 sentences  OK
+  06_order_cancellation_policy.md                -> kb-06  5 sentences  OK
+  07_loyalty_points_redemption.md                -> kb-07  5 sentences  OK
+  08_payment_failure_retry.md                    -> kb-08  5 sentences  OK
+  09_size_exchange_policy.md                     -> kb-09  5 sentences  OK
+  10_damaged_item_claim_process.md               -> kb-10  5 sentences  OK
+  11_international_shipping_restrictions.md      -> kb-11  5 sentences  OK
+  12_support_escalation_matrix.md                -> kb-12  5 sentences  OK
