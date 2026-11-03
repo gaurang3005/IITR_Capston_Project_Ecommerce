@@ -2,6 +2,9 @@
 and limit from here instead of hard-coding it."""
 import sys
 from pathlib import Path
+import os
+import sys
+from pathlib import Path
 
 # On Windows, output redirected to a file (python x.py > transcripts/x.txt) uses the ANSI code page,
 # which has no ₹ sign. UTF-8 output keeps the transcripts readable on every OS.
@@ -19,3 +22,18 @@ OVERLAP_WORDS = 10                                        # 25% overlap
 COLLECTION_FIXED = "kb_fixed"
 COLLECTION_SENTENCE = "kb_sentence"
 TOP_K = 4
+
+# --- grounded generation (Task 4) ---
+# Measured with calibrate_threshold.py (transcripts/04_threshold_calibration.txt). There is one
+# value per collection because the two chunkings give different similarity distributions.
+
+SIMILARITY_THRESHOLD = {
+    COLLECTION_FIXED: 0.359,     # midpoint of in-scope min 0.422 and out-of-scope max 0.297
+    COLLECTION_SENTENCE: 0.382,  # midpoint of in-scope min 0.497 and out-of-scope max 0.266
+}
+
+
+SENTINEL_NO_ANSWER = ("I don't have grounded information to answer that. "
+                      "Please contact Nykaa customer support so a human can help.")
+# MOCK_LLM is the default: no API keys, no network. A real model has to be enabled explicitly.
+MOCK_LLM = os.getenv("MOCK_LLM", "true").lower() != "false"

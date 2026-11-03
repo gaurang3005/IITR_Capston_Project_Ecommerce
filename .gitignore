@@ -1,3 +1,9 @@
+.venv/
+__pycache__/
+chroma_store/
+logs/
+*.pyc
+.env
 
 /BACKLOG.md
 /Assignment_Statement.md

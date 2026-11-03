@@ -1,13 +1,15 @@
-"""Task 3 — chunking, embedding, two Chroma collections and retrieval."""
+"""Task 3 — chunking, embedding, two Chroma collections and retrieval, grounded generation."""
 from __future__ import annotations
 
 import re
+from typing import Callable
 
 import chromadb
 from sentence_transformers import SentenceTransformer
 
 import config
 from knowledge_base import DOCUMENTS
+
 
 # ---- embedder (loaded once) ---------------------------------------------------
 _embedder: SentenceTransformer | None = None
@@ -114,6 +116,45 @@ def retrieve(query: str, collection_name: str, k: int = config.TOP_K) -> list[di
              "distance": dist, "similarity": 1.0 - dist}
             for cid, text, meta, dist in zip(res["ids"][0], res["documents"][0],
                                              res["metadatas"][0], res["distances"][0])]
+def top1_similarity(query: str, collection_name: str) -> float:
+    return retrieve(query, collection_name, k=1)[0]["similarity"]
+
+
+# ---- grounded generation --------------------------------------------------------
+GroundedWriter = Callable[[str, list[dict]], str]
+
+
+def mock_extractive_writer(query: str, contexts: list[dict]) -> str:
+    """MOCK_LLM writer: quotes only retrieved chunk text, best first, one line per doc (its top chunk)."""
+    lines, seen = ["Based on Nykaa policy documents:"], set()
+    for c in contexts:
+        if c["doc_id"] in seen:
+            continue
+        seen.add(c["doc_id"])
+        lines.append(f"- ({c['doc_id']}) {c['text']}")
+    return "\n".join(lines)
+
+
+def _writer() -> GroundedWriter:
+    if config.MOCK_LLM:
+        return mock_extractive_writer
+#    from real_llm import real_grounded_writer   # not part of this submission (MOCK_LLM only)
+#    return real_grounded_writer
+
+
+def generate(query: str, collection_name: str) -> dict:
+    """Retrieve -> similarity gate -> write."""
+    hits = retrieve(query, collection_name)
+    top = hits[0]["similarity"] if hits else 0.0
+    threshold = config.SIMILARITY_THRESHOLD[collection_name]
+    grounded = top >= threshold
+    # Only chunks that themselves clear the threshold are allowed into the answer.
+    supporting = [h for h in hits if h["similarity"] >= threshold] if grounded else []
+    return {
+        "answer": _writer()(query, supporting) if grounded else config.SENTINEL_NO_ANSWER,
+        "grounded": grounded, "top_similarity": round(top, 4), "threshold": threshold,
+        "contexts": supporting, "all_hits": hits,
+    }
 
 
 if __name__ == "__main__":

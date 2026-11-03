@@ -63,3 +63,115 @@ output:-
   10_damaged_item_claim_process.md               -> kb-10  5 sentences  OK
   11_international_shipping_restrictions.md      -> kb-11  5 sentences  OK
   12_support_escalation_matrix.md                -> kb-12  5 sentences  OK
+
+Task 3 — Two chunking strategies, embedded and indexed
+--------------------------------------------------------------
+*calibrate_threshold.py output: 
+Embedding model: all-MiniLM-L6-v2
+kb_fixed    : 50 chunks indexed
+kb_sentence : 60 chunks indexed
+
+Sample query: "How long is the return window for footwear?"
+kb_fixed top-3:
+  0.422  kb-01  cosmetics cannot be resold for hygiene reasons. - The window is counte...
+  0.418  kb-05  large Home appliances carry 6 months on the motor or heating element. ...
+  0.416  kb-01  Nykaa accepts returns within a window that depends on what was bought,...
+kb_sentence top-3:
+  0.590  kb-01  - Apparel and Footwear may be returned within 14 days of delivery, Hom...
+  0.478  kb-05  - Apparel and Footwear have no ongoing warranty, but a manufacturing d...
+  0.376  kb-05  Warranty is separate from the return window and is honoured by the bra...
+(.venv)  > & e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\.venv\Scripts\python.exe e:/Goole_Drive/Git/IITR_Capston_Project_Ecommerce/calibrate_threshold.py
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 3306.04it/s]
+
+=== kb_fixed ===
+IN-SCOPE top-1 similarity
+  0.422  How long is the return window for footwear?
+  0.655  When will I get my COD refund?
+  0.678  What is the delivery time for metro cities?
+  0.747  Can I cancel an order after it has shipped?
+  0.677  How much are 500 loyalty points worth?
+OUT-OF-SCOPE top-1 similarity
+  0.169  What is your CEO's salary?
+  0.297  Book me a flight to Delhi tomorrow.
+  0.156  Recommend a good laptop for gaming.
+clusters separate: in-scope min 0.422 > out-of-scope max 0.297 (gap 0.125) -> threshold = midpoint = 0.359
+
+=== kb_sentence ===
+IN-SCOPE top-1 similarity
+  0.590  How long is the return window for footwear?
+  0.725  When will I get my COD refund?
+  0.497  What is the delivery time for metro cities?
+  0.727  Can I cancel an order after it has shipped?
+  0.591  How much are 500 loyalty points worth?
+OUT-OF-SCOPE top-1 similarity
+  0.197  What is your CEO's salary?
+  0.266  Book me a flight to Delhi tomorrow.
+  0.148  Recommend a good laptop for gaming.
+clusters separate: in-scope min 0.497 > out-of-scope max 0.266 (gap 0.231) -> threshold = midpoint = 0.382
+
+Thresholds for config.SIMILARITY_THRESHOLD:
+  {"kb_fixed": 0.359, "kb_sentence": 0.382}
+
+
+*output of rag_core.py:-
+Loading weights: 100%|███████████████████████| 103/103 [00:00<00:00, 4396.90it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Embedding model: all-MiniLM-L6-v2
+kb_fixed    : 50 chunks indexed
+kb_sentence : 60 chunks indexed
+
+Sample query: "How long is the return window for footwear?"
+kb_fixed top-3:
+  0.422  kb-01  cosmetics cannot be resold for hygiene reasons. - The window is counte...
+  0.418  kb-05  large Home appliances carry 6 months on the motor or heating element. ...
+  0.416  kb-01  Nykaa accepts returns within a window that depends on what was bought,...
+kb_sentence top-3:
+  0.590  kb-01  - Apparel and Footwear may be returned within 14 days of delivery, Hom...
+  0.478  kb-05  - Apparel and Footwear have no ongoing warranty, but a manufacturing d...
+  0.376  kb-05  Warranty is separate from the return window and is honoured by the bra...
+
+
+Task 4 — Grounded generation and your measured I don't know threshold
+----------------------------------------------------------------------------
+chosen threshold - as per calibration_threshold.py. -- Task-3. 
+SIMILARITY_THRESHOLD = {
+    COLLECTION_FIXED: 0.359,     # midpoint of in-scope min 0.422 and out-of-scope max 0.297
+    COLLECTION_SENTENCE: 0.382,  # midpoint of in-scope min 0.497 and out-of-scope max 0.266
+}
+
+*output of grounded_demo.py
+
+Q: How long is the return window for footwear?
+   top-1 similarity 0.5898 vs threshold 0.382 -> grounded=True
+   Based on Nykaa policy documents:
+- (kb-01) - Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days.
+- (kb-05) - Apparel and Footwear have no ongoing warranty, but a manufacturing defect such as a split sole or a failed seam can be claimed within 30 days of delivery.
+
+Q: When will I get my COD refund?
+   top-1 similarity 0.7248 vs threshold 0.382 -> grounded=True
+   Based on Nykaa policy documents:
+- (kb-02) - If a COD refund has not arrived 10 business days after the quality check cleared, support raises a payment trace with the bank.
+- (kb-06) - A prepaid cancellation is refunded in full to the original instrument within 3 to 5 business days, while a COD cancellation needs no refund because nothing was paid.
+- (kb-10) - An approved claim is settled as a free replacement where stock exists, or as a full refund including any shipping fee, within 3 to 5 business days of approval.
+
+Q: What is the delivery time for metro cities?
+   top-1 similarity 0.497 vs threshold 0.382 -> grounded=True
+   Based on Nykaa policy documents:
+- (kb-03) - Metro pincodes are served in 2 to 3 business days, tier-2 and tier-3 towns in 4 to 6 business days, and remote or hill pincodes in 7 to 9 business days.
+
+Q: Can I cancel an order after it has shipped?
+   top-1 similarity 0.7268 vs threshold 0.382 -> grounded=True
+   Based on Nykaa policy documents:
+- (kb-06) A customer can cancel an order at no cost at any time while its status is still Placed.
+- (kb-02) A cash-on-delivery order is paid in cash at the door, so its refund cannot be reversed to a card and must be sent to a bank account the customer confirms.
+
+Q: How much are 500 loyalty points worth?
+   top-1 similarity 0.5909 vs threshold 0.382 -> grounded=True
+   Based on Nykaa policy documents:
+- (kb-07) Customers earn 1 loyalty point for every Rs.100 of order value that is actually paid and retained.
+
+Q: Book me a flight to Delhi tomorrow.
+   top-1 similarity 0.2663 vs threshold 0.382 -> grounded=False
+   I don't have grounded information to answer that. Please contact Nykaa customer support so a human can help.
+
+
