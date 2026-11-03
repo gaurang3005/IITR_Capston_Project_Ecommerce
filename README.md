@@ -1,9 +1,14 @@
+*************************
+*PART-I
+************************
+
+
 I completed the Nykaa (E-commerce & Retail) track.
 
 Telemetry: `config.py` sets `CREWAI_DISABLE_TELEMETRY`, `OTEL_SDK_DISABLED` and `CREWAI_TRACING_ENABLED` before anything imports CrewAI, so no outbound network call is made during `crew.kickoff()`. Import `config` before any CrewAI import in every entry point.
 
 Mode: everything runs under `MOCK_LLM` (the default) with zero API keys and zero network access.
-
+-----------------------------------------------------
 Task 1 — deterministic, seeded Nykaa order dataset.
 ----------------------------------------------------
 Design choices (seed 42 gives Apparel 7, Electronics 7, Home 10, Footwear 12, Beauty 12 -- these are the achieved counts, not the weights):
@@ -42,7 +47,7 @@ Output:
     RESULT: PASS
 
     First record: {'record_id': 'ORD0001', 'category': 'Home', 'status': 'Placed', 'order_value_inr': 18223, 'days_since_created': 7, 'delayed_shipment': False}
-
+----------------------------------------------------------
 Task-2. Write your knowledge base : checks 
 ----------------------------------------------------------
 Loads the folder: it reads every .md file in sorted order and skips # title lines. It joins the text into one paragraph and reads the files as UTF-8, so ₹ stays intact.
@@ -63,7 +68,7 @@ output:-
   10_damaged_item_claim_process.md               -> kb-10  5 sentences  OK
   11_international_shipping_restrictions.md      -> kb-11  5 sentences  OK
   12_support_escalation_matrix.md                -> kb-12  5 sentences  OK
-
+-----------------------------------------------------------------
 Task 3 — Two chunking strategies, embedded and indexed
 --------------------------------------------------------------
 *calibrate_threshold.py output: 
@@ -130,7 +135,7 @@ kb_sentence top-3:
   0.478  kb-05  - Apparel and Footwear have no ongoing warranty, but a manufacturing d...
   0.376  kb-05  Warranty is separate from the return window and is honoured by the bra...
 
-
+----------------------------------------------------------------------------
 Task 4 — Grounded generation and your measured I don't know threshold
 ----------------------------------------------------------------------------
 chosen threshold - as per calibration_threshold.py. -- Task-3. 
@@ -173,5 +178,86 @@ Q: How much are 500 loyalty points worth?
 Q: Book me a flight to Delhi tomorrow.
    top-1 similarity 0.2663 vs threshold 0.382 -> grounded=False
    I don't have grounded information to answer that. Please contact Nykaa customer support so a human can help.
+--------------------------------------------------------
+Task 5 — Precision/recall of both chunking strategies
+--------------------------------------------------------
+output of rage_compare.py
 
+The win is narrow. Precision is 0.633 against 0.600, with equal recall, and the per-query results are mixed. Sentence chunks win on metro delivery (1.00 against 0.50) but lose on footwear and COD (0.33 against 0.50), because the top 4 sentences spread over neighbouring docs
+
+=== kb_fixed  (top-4 chunks -> unique parent docs, cap 3) ===
+
+Q: How long is the return window for footwear?
+   chunks -> docs : ['kb-01', 'kb-05', 'kb-01', 'kb-01'] -> ['kb-01', 'kb-05']
+   gold           : ['kb-01']   relevant retrieved: ['kb-01']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: When will I get my COD refund?
+   chunks -> docs : ['kb-02', 'kb-06', 'kb-02', 'kb-06'] -> ['kb-02', 'kb-06']
+   gold           : ['kb-02']   relevant retrieved: ['kb-02']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: What is the delivery time for metro cities?
+   chunks -> docs : ['kb-03', 'kb-03', 'kb-03', 'kb-10'] -> ['kb-03', 'kb-10']
+   gold           : ['kb-03']   relevant retrieved: ['kb-03']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: Can I cancel an order after it has shipped?
+   chunks -> docs : ['kb-06', 'kb-06', 'kb-06', 'kb-02'] -> ['kb-06', 'kb-02']
+   gold           : ['kb-06']   relevant retrieved: ['kb-06']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: How much are 500 loyalty points worth?
+   chunks -> docs : ['kb-07', 'kb-07', 'kb-07', 'kb-07'] -> ['kb-07']
+   gold           : ['kb-07']   relevant retrieved: ['kb-07']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+   mean precision = (0.50 + 0.50 + 0.50 + 0.50 + 1.00) / 5 = 0.600
+   mean recall    = (1.00 + 1.00 + 1.00 + 1.00 + 1.00) / 5 = 1.000
+
+=== kb_sentence  (top-4 chunks -> unique parent docs, cap 3) ===
+
+Q: How long is the return window for footwear?
+   chunks -> docs : ['kb-01', 'kb-05', 'kb-05', 'kb-11'] -> ['kb-01', 'kb-05', 'kb-11']
+   gold           : ['kb-01']   relevant retrieved: ['kb-01']
+   precision = 1/3 = 0.33
+   recall    = 1/1 = 1.00
+
+Q: When will I get my COD refund?
+   chunks -> docs : ['kb-02', 'kb-06', 'kb-02', 'kb-10'] -> ['kb-02', 'kb-06', 'kb-10']
+   gold           : ['kb-02']   relevant retrieved: ['kb-02']
+   precision = 1/3 = 0.33
+   recall    = 1/1 = 1.00
+
+Q: What is the delivery time for metro cities?
+   chunks -> docs : ['kb-03', 'kb-03', 'kb-03', 'kb-03'] -> ['kb-03']
+   gold           : ['kb-03']   relevant retrieved: ['kb-03']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+Q: Can I cancel an order after it has shipped?
+   chunks -> docs : ['kb-06', 'kb-06', 'kb-06', 'kb-02'] -> ['kb-06', 'kb-02']
+   gold           : ['kb-06']   relevant retrieved: ['kb-06']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: How much are 500 loyalty points worth?
+   chunks -> docs : ['kb-07', 'kb-07', 'kb-07', 'kb-07'] -> ['kb-07']
+   gold           : ['kb-07']   relevant retrieved: ['kb-07']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+   mean precision = (0.33 + 0.33 + 1.00 + 0.50 + 1.00) / 5 = 0.633
+   mean recall    = (1.00 + 1.00 + 1.00 + 1.00 + 1.00) / 5 = 1.000
+
+Higher P+R on this sample: kb_sentence
+
+*************************
+*PART-II
+************************
 

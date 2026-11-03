@@ -142,7 +142,7 @@ def _writer() -> GroundedWriter:
 #    return real_grounded_writer
 
 
-def generate(query: str, collection_name: str) -> dict:
+def generate(query: str, collection_name: str = config.RECOMMENDED_COLLECTION) -> dict:
     """Retrieve -> similarity gate -> write."""
     hits = retrieve(query, collection_name)
     top = hits[0]["similarity"] if hits else 0.0

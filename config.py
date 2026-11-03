@@ -37,3 +37,10 @@ SENTINEL_NO_ANSWER = ("I don't have grounded information to answer that. "
                       "Please contact Nykaa customer support so a human can help.")
 # MOCK_LLM is the default: no API keys, no network. A real model has to be enabled explicitly.
 MOCK_LLM = os.getenv("MOCK_LLM", "true").lower() != "false"
+
+
+# --- chunking choice (Task 5) ---
+# kb_sentence had the higher precision at equal recall (transcripts/05_chunking_comparison.txt).
+# generate() searches this collection unless it is given another one.
+RECOMMENDED_COLLECTION = COLLECTION_SENTENCE
+
