@@ -261,3 +261,24 @@ Higher P+R on this sample: kb_sentence
 *PART-II
 ************************
 
+---------------------------------------------------------------
+Task 6 — Tools.py --> check_order_status with a designed escalation score
+---------------------------------------------------------------
+
+age              = clip(days_since_created, 0, 30) / 30
+escalation_score = round(0.6 * delayed_shipment + 0.4 * age, 4)      # delayed_shipment as 1 or 0
+
+*output of my tool.py
+
+days_since_created sorted: [1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 9, 9, 11, 12, 14, 14, 16, 16, 16, 17, 18, 18, 19, 20, 20, 20, 20, 21, 23, 23, 24, 24, 24, 27, 27, 27, 28, 29, 29]
+p75(days) = 20.25
+ESCALATION_THRESHOLD = 0.6 + 0.4 * (20.25 / 30) = 0.87
+delayed orders: 10; escalated by the score: 2 -> ['ORD0029', 'ORD0039']
+ORD0029 {"found": true, "record_id": "ORD0029", "status": "Placed", "category": "Home", "order_value_inr": 24703, "days_since_created": 24, "delayed_shipment": true, "escalation_score": 0.92, "escalation_threshold": 0.87, "recommend_escalation": true}
+ORD0039 {"found": true, "record_id": "ORD0039", "status": "Placed", "category": "Footwear", "order_value_inr": 4616, "days_since_created": 28, "delayed_shipment": true, "escalation_score": 0.9733, "escalation_threshold": 0.87, "recommend_escalation": true}
+ORD0022 {"found": true, "record_id": "ORD0022", "status": "Returned", "category": "Footwear", "order_value_inr": 10215, "days_since_created": 20, "delayed_shipment": true, "escalation_score": 0.8667, "escalation_threshold": 0.87, "recommend_escalation": false}
+ORD0001 {"found": true, "record_id": "ORD0001", "status": "Placed", "category": "Home", "order_value_inr": 18223, "days_since_created": 7, "delayed_shipment": false, "escalation_score": 0.0933, "escalation_threshold": 0.87, "recommend_escalation": false}
+ORD9999 {"found": false, "record_id": "ORD9999", "error": "no such order"}
+
+
+I recommend escalation when the score is at or above 0.87. That is a delayed order at the 75th percentile of days_since_created in my data (20.25 days): 0.6 + 0.4 * (20.25 / 30) = 0.87. On-time orders cannot exceed 0.40, so the threshold escalates 2 of the 10 delayed orders (ORD0029 and ORD0039) instead of all 10 (transcripts/06_order_tool.txt). 
