@@ -264,6 +264,8 @@ Higher P+R on this sample: kb_sentence
 ---------------------------------------------------------------
 Task 6 — Tools.py --> check_order_status with a designed escalation score
 ---------------------------------------------------------------
+I recommend escalation when the score is at or above 0.87. That is a delayed order at the 75th percentile of days_since_created in my data (20.25 days): 0.6 + 0.4 * (20.25 / 30) = 0.87. On-time orders cannot exceed 0.40, so the threshold escalates 2 of the 10 delayed orders (ORD0029 and ORD0039) instead of all 10 (transcripts/06_order_tool.txt). 
+
 
 age              = clip(days_since_created, 0, 30) / 30
 escalation_score = round(0.6 * delayed_shipment + 0.4 * age, 4)      # delayed_shipment as 1 or 0
@@ -281,4 +283,35 @@ ORD0001 {"found": true, "record_id": "ORD0001", "status": "Placed", "category": 
 ORD9999 {"found": false, "record_id": "ORD9999", "error": "no such order"}
 
 
-I recommend escalation when the score is at or above 0.87. That is a delayed order at the 75th percentile of days_since_created in my data (20.25 days): 0.6 + 0.4 * (20.25 / 30) = 0.87. On-time orders cannot exceed 0.40, so the threshold escalates 2 of the 10 delayed orders (ORD0029 and ORD0039) instead of all 10 (transcripts/06_order_tool.txt). 
+---------------------------------------------------------------
+Task-7 Build a CrewAI crew
+---------------------------------------------------------------
+A three-agent crew run with kickoff(); a mock ReAct LLM drives it offline
+
+main files: crew_builder.py, mock_llm.py, crew_demo.py, schemas.py
+
+In, Mock_llm.py, 
+1. _last_observation() reads tool output only from assistant messages, so the ReAct template's fake Observation: (in the system message) can never be read as a result.
+2. Routing keeps no state: one mock instance can serve every agent, and nothing from one agent's steps leaks into the next agent's decision.
+3. Dispatch reads the declared parameter names (_declared_tools() parses Tool Arguments:), so the substring lookup in rag_lookup is irrelevant.
+4. _current_task() trims the prompt scaffolding and _question() takes the CUSTOMER_QUESTION: line, so a tool receives the customer's question, not the prompt.
+
+*output of crew_demo.py
+
+Q: How long is the return window for footwear?
+   tools invoked via kickoff(): ['rag_lookup']
+   CrewResponse (validated): {"answer":"- Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days. - Apparel and Footwear have no ongoing warranty, but a manufacturing defect such as a split sole or a failed seam can be claimed within 30 days of delivery.","sources":["kb-01","kb-05"],"grounded":true,"escalated":false,"confidence":0.8}
+
+Q: What is the status of order ORD0029?
+   tools invoked via kickoff(): ['rag_lookup', 'check_order_status']
+   CrewResponse (validated): {"answer":"Order ORD0029 (Home, order value 24703 INR) is Placed, created 24 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.92 is above the threshold 0.87.","sources":["ORD0029"],"grounded":true,"escalated":true,"confidence":0.6}
+
+Q: Where is my order ORD9999?
+   tools invoked via kickoff(): ['rag_lookup', 'check_order_status']
+   CrewResponse (validated): {"answer":"No such order ORD9999 was found.","sources":[],"grounded":false,"escalated":true,"confidence":0.6}
+
+Task 9 negative test (the validator is load-bearing):
+   REJECTED: 2 validation errors -> [('answer', 'string_too_short'), ('confidence', 'less_than_equal')]
+
+
+*-The Lookup agent calls check_order_status (it declares record_id) only when the question carries an order id, and otherwise answers NO_ORDER_ID_GIVEN. A name-substring router would have sent the order id to rag_lookup. An unknown order (ORD9999) is reported as not found and marked escalated, so a human checks it.

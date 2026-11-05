@@ -44,3 +44,13 @@ MOCK_LLM = os.getenv("MOCK_LLM", "true").lower() != "false"
 # generate() searches this collection unless it is given another one.
 RECOMMENDED_COLLECTION = COLLECTION_SENTENCE
 
+# --- CrewAI (Task 7) ---
+# Telemetry is switched off here, and every module that uses CrewAI imports config before crewai,
+# so a MOCK_LLM run makes no network calls.
+os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
+os.environ.setdefault("OTEL_SDK_DISABLED", "true")
+os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
+# The model the crew runs on when MOCK_LLM=false, e.g. "groq/llama-3.1-8b-instant". It is empty by
+# default, and a MOCK_LLM run never reads it.
+REAL_LLM_MODEL = os.getenv("REAL_LLM_MODEL", "")
+

@@ -1,10 +1,16 @@
-"""Task 6 — check_order_status and its designed escalation score."""
+"""check_order_status and its escalation score (Task 6), plus the two CrewAI tools (Task 7)."""
 from __future__ import annotations
 
 import json
 from typing import Any
 
+import config
+from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
+
 from dataset import ORDERS
+from rag_core import generate
+
 
 # ---- escalation score (Task 6) ----------------------------------------------------
 W_DELAY, W_AGE = 0.6, 0.4
@@ -43,6 +49,35 @@ def check_order_status(record_id: str) -> dict[str, Any]:
             "delayed_shipment": order["delayed_shipment"], "escalation_score": score,
             "escalation_threshold": ESCALATION_THRESHOLD,
             "recommend_escalation": score >= ESCALATION_THRESHOLD}
+
+
+# ---- CrewAI tool wrappers ---------------------------------------------------------
+# The declared args_schema is printed by CrewAI into the agent's system prompt as
+# "Tool Arguments: {...}". MockReActLLM dispatches on THOSE parameter names (Pitfall 2).
+class RAGLookupInput(BaseModel):
+    query: str = Field(..., description="The customer's policy question")
+
+
+class RAGLookupTool(BaseTool):
+    name: str = "rag_lookup"                    # contains 'lookup' on purpose (Pitfall 2)
+    description: str = "Search the Nykaa policy knowledge base and return grounded policy text."
+    args_schema: type[BaseModel] = RAGLookupInput
+
+    def _run(self, query: str) -> str:
+        return generate(query, collection_name=config.RECOMMENDED_COLLECTION)["answer"]
+
+
+class OrderLookupInput(BaseModel):
+    record_id: str = Field(..., description="Order record id, e.g. ORD0007")
+
+
+class OrderStatusTool(BaseTool):
+    name: str = "check_order_status"
+    description: str = "Look up one Nykaa order by record_id: status, value, escalation score."
+    args_schema: type[BaseModel] = OrderLookupInput
+
+    def _run(self, record_id: str) -> str:
+        return json.dumps(check_order_status(record_id))
 
 
 if __name__ == "__main__":
