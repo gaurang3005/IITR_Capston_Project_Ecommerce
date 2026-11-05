@@ -397,3 +397,53 @@ e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:39: LangChain
 e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
   return _store.setdefault(session_id, InMemoryChatMessageHistory())
    out-of-scope via pipeline: refused_ungrounded | I don't have grounded information to answer that. Please contact Nykaa customer support so a human can help.
+
+
+*************************
+*PART-III
+************************
+
+----------------------------------------------------------------------------
+Task-11: Deploy via FastAPI (2+ HTTP endpoints + 1 WebSocket)
+-----------------------------------------------------------------------------
+file: api.py ; api_demo.py
+
+- session_id is created per WebSocket connection, not passed by the client. That is deliberate: a client cannot hijack or collide with another conversation's memory.
+- /add-document is in-process only: it appends to DOCUMENTS and re-indexes, but does not write a file, so a restart reloads knowledge_base/ without the new doc. (chroma_store keeps its chunks on disk until the next re-index.) The durable path is a new knowledge_base/<NN>_<topic>.md file plus a re-index.
+- AskRequest.message has max_length=50_000, only as an abuse cap. The real control on request size is the token budget in Task 15, and the cap has to stay above it (a 2,000-character cap)
+- A malformed WebSocket frame (bad JSON, a binary frame, or JSON that is not an object) gets an error reply, and the chat continues. So does a turn that fails. A disconnect, or a send after the client vanished (RuntimeError), ends only that client's handler. The server keeps serving everyone else.
+
+*output of api_demo.py
+
+   GET /health -> {'status': 'ok', 'documents': 12, 'mock_llm': True}
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:39: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+   chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory`was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+   return _store.setdefault(session_id, InMemoryChatMessageHistory())
+   Loading weights: 100%|██████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 4671.27it/s]
+   POST /ask -> 200 {'outcome': 'answered', 'sources': ['kb-07'], 'grounded': True}
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:39: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+   chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   POST /ask (PII) -> 200 answered pii_masked= True
+   POST /ask (empty) -> 422 (Pydantic validation)
+   POST /add-document -> 200 {'doc_id': 'kb-13', 'chunks_indexed': {'kb_fixed': 51, 'kb_sentence': 62}}
+
+   WebSocket: client 1 does two turns (memory), then disconnects mid-conversation
+      {'type': 'hello', 'session_id': 'ws-6173258e'}
+      turn1: ['kb-01', 'kb-05']
+      turn2: ['kb-01', 'kb-04', 'kb-10', 'kb-13']
+      bad frame: {'type': 'error', 'detail': 'send JSON like {"message": "..."}'}
+      client 1 closed the socket
+      client 2 still served: answered
+
+*output of ws_client.py
+
+   run on server: uvicorn api:app --port 8000
+
+   c1 {'type': 'hello', 'session_id': 'ws-be2303ea'}
+   c1 answer: answered
+   c1 disconnected mid-conversation
+   c2 answer: answered
+
+The second client was still served after the first one vanished mid-turn. That is the "survives a disconnect" evidence.
+
