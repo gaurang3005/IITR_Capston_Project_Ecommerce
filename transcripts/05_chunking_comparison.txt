@@ -1,0 +1,75 @@
+$ python rag_compare.py
+
+
+=== kb_fixed  (top-4 chunks -> unique parent docs, cap 3) ===
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+
+Q: How long is the return window for footwear?
+   chunks -> docs : ['kb-01', 'kb-05', 'kb-01', 'kb-01'] -> ['kb-01', 'kb-05']
+   gold           : ['kb-01']   relevant retrieved: ['kb-01']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: When will I get my COD refund?
+   chunks -> docs : ['kb-02', 'kb-06', 'kb-02', 'kb-06'] -> ['kb-02', 'kb-06']
+   gold           : ['kb-02']   relevant retrieved: ['kb-02']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: What is the delivery time for metro cities?
+   chunks -> docs : ['kb-03', 'kb-03', 'kb-03', 'kb-10'] -> ['kb-03', 'kb-10']
+   gold           : ['kb-03']   relevant retrieved: ['kb-03']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: Can I cancel an order after it has shipped?
+   chunks -> docs : ['kb-06', 'kb-06', 'kb-06', 'kb-02'] -> ['kb-06', 'kb-02']
+   gold           : ['kb-06']   relevant retrieved: ['kb-06']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: How much are 500 loyalty points worth?
+   chunks -> docs : ['kb-07', 'kb-07', 'kb-07', 'kb-07'] -> ['kb-07']
+   gold           : ['kb-07']   relevant retrieved: ['kb-07']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+   mean precision = (0.50 + 0.50 + 0.50 + 0.50 + 1.00) / 5 = 0.600
+   mean recall    = (1.00 + 1.00 + 1.00 + 1.00 + 1.00) / 5 = 1.000
+
+=== kb_sentence  (top-4 chunks -> unique parent docs, cap 3) ===
+
+Q: How long is the return window for footwear?
+   chunks -> docs : ['kb-01', 'kb-05', 'kb-05', 'kb-11'] -> ['kb-01', 'kb-05', 'kb-11']
+   gold           : ['kb-01']   relevant retrieved: ['kb-01']
+   precision = 1/3 = 0.33
+   recall    = 1/1 = 1.00
+
+Q: When will I get my COD refund?
+   chunks -> docs : ['kb-02', 'kb-06', 'kb-02', 'kb-10'] -> ['kb-02', 'kb-06', 'kb-10']
+   gold           : ['kb-02']   relevant retrieved: ['kb-02']
+   precision = 1/3 = 0.33
+   recall    = 1/1 = 1.00
+
+Q: What is the delivery time for metro cities?
+   chunks -> docs : ['kb-03', 'kb-03', 'kb-03', 'kb-03'] -> ['kb-03']
+   gold           : ['kb-03']   relevant retrieved: ['kb-03']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+Q: Can I cancel an order after it has shipped?
+   chunks -> docs : ['kb-06', 'kb-06', 'kb-06', 'kb-02'] -> ['kb-06', 'kb-02']
+   gold           : ['kb-06']   relevant retrieved: ['kb-06']
+   precision = 1/2 = 0.50
+   recall    = 1/1 = 1.00
+
+Q: How much are 500 loyalty points worth?
+   chunks -> docs : ['kb-07', 'kb-07', 'kb-07', 'kb-07'] -> ['kb-07']
+   gold           : ['kb-07']   relevant retrieved: ['kb-07']
+   precision = 1/1 = 1.00
+   recall    = 1/1 = 1.00
+
+   mean precision = (0.33 + 0.33 + 1.00 + 0.50 + 1.00) / 5 = 0.633
+   mean recall    = (1.00 + 1.00 + 1.00 + 1.00 + 1.00) / 5 = 1.000
+
+Higher P+R on this sample: kb_sentence

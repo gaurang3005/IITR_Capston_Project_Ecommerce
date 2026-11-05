@@ -1,0 +1,40 @@
+$ python api_demo.py
+
+GET /health -> {'status': 'ok', 'documents': 12, 'mock_llm': True}
+
+HTTP sessions are server-issued
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:56: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+  return _store.setdefault(session_id, InMemoryChatMessageHistory())
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:56: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   customer A, turn 1 -> answered, session_id=http-d779f0a1f8a4, sources=['kb-01']
+   customer A, turn 2 'And what about Beauty?' (same session_id) -> sources=['kb-01', 'kb-04', 'kb-10', 'kb-05']
+   customer B 'Check order ORD0039 please' -> sources=['ORD0039']
+   customer C 'Is it delayed?' (no session_id) -> sources=['kb-03'], sees B's order: False
+   session_id the server never issued -> 404 unknown session_id: omit it to start a new conversation
+
+Other HTTP cases
+   POST /ask (PII) -> 200 answered pii_masked = True
+   POST /ask (empty) -> 422 (Pydantic validation)
+   POST /ask (oversized) -> 413 Request rejected: request needs ~18600 tokens (₹9.3); budget is 6000 tokens (₹3.0)
+   POST /add-document -> 200 {'doc_id': 'kb-13', 'chunks_indexed': {'kb_fixed': 51, 'kb_sentence': 62}}
+   POST /add-document (same doc_id again) -> 409 kb-13 already exists
+
+WebSocket: client 1 does two turns (memory), sends a bad frame, then disconnects
+   {'type': 'hello', 'session_id': 'ws-d453e64e'}
+   turn 1: ['kb-01']
+   turn 2: ['kb-01', 'kb-04', 'kb-10', 'kb-13']
+   bad frame: {'type': 'error', 'detail': 'send JSON like {"message": "..."}'}
+   client 1 closed the socket
+   client 2 still served: answered
+
+logs/app.jsonl: 17 lines
+   HTTP requests sent: 11 -> HTTP log lines: 11
+   WebSocket messages sent: 4 -> WS message log lines: 4, disconnect lines: 2
+   every line has trace_id and timing: True
+   HTTP status codes logged: [200, 404, 409, 413, 422]
+   raw '9876543210' on disk: False | raw 'ending 4321' on disk: False
+   masked line: {"trace_id": "baff09fed4e2", "method": "POST", "path": "/ask", "status_code": 200, "query_masked": "Call me on [PHONE_REDACTED] about order ORD0029, card ending [CARD_LAST4_REDACTED]", "pii_counts": {"card_number": 0, "card_last4": 1, "phone": 1}, "outcome": "answered", "latency_ms": 166.6}

@@ -1,22 +1,28 @@
-"""Task 14 transcript: one approve-unchanged case and one revise case, both structured verdicts."""
-from rag_core import generate
+"""Task 14 transcript: the AutoGen team reviews the CrewAI Composer's own draft (from .kickoff()) plus
+the retrieved context, on two different queries: A is approved unchanged, B is revised after an
+ungrounded claim is deliberately appended to the draft. Both verdicts are structured ReviewVerdicts."""
+from crew_builder import run_crew
 from review_stage import review_draft
 
-q = "How long is the return window for footwear?"
-g = generate(q)
-contexts = [c["text"] for c in g["contexts"]]
-clean = " ".join(contexts[:1])                        # a draft built only from retrieved text
 
-v1, trace1 = review_draft(clean, contexts)
-print(f"A) query: {q}\n   draft: {clean}")
-print(f"   message trace: {trace1}")
-print(f"   verdict: {v1.model_dump()}")
-print(f"   approved unchanged: {v1.approved and v1.final_answer == clean}")
+def review(label: str, query: str, draft: str, evidence: list[str]):
+    verdict, trace = review_draft(draft, evidence)
+    print(f"{label}) query: {query}")
+    print(f"   draft         : {draft}")
+    print(f"   message trace : {trace}")
+    print(f"   verdict       : {verdict.model_dump()}")
+    return verdict
 
-# TEST ARTEFACT: a deliberately injected ungrounded claim (not real crew output).
-injected = clean + " Electronics can also be returned within 60 days for any reason."
-v2, trace2 = review_draft(injected, contexts)
-print(f"\nB) draft with injected claim: {injected}")
-print(f"   message trace: {trace2}")
-print(f"   verdict: {v2.model_dump()}")
-print(f"   revised: {not v2.approved and v2.final_answer != injected}")
+
+qa = "How long is the return window for footwear?"
+draft_a, evidence_a = run_crew(qa)                    # the Composer's validated CrewResponse
+va = review("A", qa, draft_a.answer, evidence_a)
+print(f"   approved unchanged: {va.approved and va.final_answer == draft_a.answer}\n")
+
+qb = "When will I get my COD refund?"
+draft_b, evidence_b = run_crew(qb)
+# TEST ARTEFACT: an ungrounded claim appended to the real draft (the crew never writes it).
+injected = draft_b.answer + " COD refunds are always credited within 24 hours."
+vb = review("B", qb, injected, evidence_b)
+print(f"   revised: {not vb.approved and vb.final_answer != injected}"
+      f" | injected claim removed: {'24 hours' not in vb.final_answer}")

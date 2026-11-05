@@ -1,0 +1,15 @@
+# server: python -m uvicorn api:app --port 50200
+$ python ws_client.py ws://127.0.0.1:50200/ws/chat
+
+c1 {'type': 'hello', 'session_id': 'ws-3933af04'}
+c1 answer: answered
+c1 disconnected mid-conversation
+c2 answer: answered
+
+--- logs/app.jsonl lines the server wrote during this run ---
+{"ts": "2026-11-05T16:37:28.489+00:00", "trace_id": "b88a8fccea8f", "channel": "http", "method": "GET", "path": "/health", "status_code": 200, "latency_ms": 1.6, "outcome": "ok"}
+{"ts": "2026-11-05T16:37:28.876+00:00", "trace_id": "1b98aebc8698", "channel": "ws", "session_id": "ws-3933af04", "query_masked": "How much are 500 loyalty points worth?", "pii_counts": {"card_number": 0, "card_last4": 0, "phone": 0}, "injection": {"is_injection": false, "pattern": null}, "resolved_query": "How much are 500 loyalty points worth?", "budget": {"estimated_tokens": 4670, "token_budget": 6000, "estimated_inr": 2.335, "inr_budget": 3.0}, "sources": ["kb-07"], "output_guard": {"grounded": true, "supported_ratio": 1.0, "unsupported": [], "pii_in_output": false}, "review_approved": true, "review_trace": ["TextMessage:user", "TextMessage:Policy_Compliance_Reviewer", "StructuredMessage[ReviewVerdict]:Final_Editor"], "outcome": "answered", "latency_ms": 201.2}
+{"ts": "2026-11-05T16:37:29.036+00:00", "trace_id": "d8565ee27c30", "channel": "ws", "session_id": "ws-3933af04", "query_masked": "And what about Beauty?", "pii_counts": {"card_number": 0, "card_last4": 0, "phone": 0}, "injection": {"is_injection": false, "pattern": null}, "resolved_query": "And what about Beauty?", "budget": {"estimated_tokens": 4717, "token_budget": 6000, "estimated_inr": 2.3585, "inr_budget": 3.0}, "sources": ["kb-10"], "output_guard": {"grounded": true, "supported_ratio": 1.0, "unsupported": [], "pii_in_output": false}, "review_approved": true, "review_trace": ["TextMessage:user", "TextMessage:Policy_Compliance_Reviewer", "StructuredMessage[ReviewVerdict]:Final_Editor"], "outcome": "answered", "latency_ms": 159.2}
+{"ts": "2026-11-05T16:37:29.037+00:00", "trace_id": "ws-3933af04", "channel": "ws", "event": "ws_disconnect", "session_id": "ws-3933af04", "close_code": 1006, "outcome": "client_disconnected", "duration_ms": 362.3}
+{"ts": "2026-11-05T16:37:31.038+00:00", "trace_id": "4cb111832cc7", "channel": "ws", "session_id": "ws-e9d51158", "query_masked": "Check order ORD0029", "pii_counts": {"card_number": 0, "card_last4": 0, "phone": 0}, "injection": {"is_injection": false, "pattern": null}, "resolved_query": "Check order ORD0029", "budget": {"estimated_tokens": 4635, "token_budget": 6000, "estimated_inr": 2.3175, "inr_budget": 3.0}, "sources": ["ORD0029"], "output_guard": {"grounded": true, "supported_ratio": 1.0, "unsupported": [], "pii_in_output": false}, "review_approved": true, "review_trace": ["TextMessage:user", "TextMessage:Policy_Compliance_Reviewer", "StructuredMessage[ReviewVerdict]:Final_Editor"], "outcome": "answered", "latency_ms": 153.2}
+{"ts": "2026-11-05T16:37:31.039+00:00", "trace_id": "ws-e9d51158", "channel": "ws", "event": "ws_disconnect", "session_id": "ws-e9d51158", "close_code": 1000, "outcome": "client_disconnected", "duration_ms": 154.5}

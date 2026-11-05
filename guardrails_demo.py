@@ -15,9 +15,10 @@ print("   false positive on a customer named Dan:", detect_injection("Hi, I am D
 
 print("\n3) OUTPUT GROUNDEDNESS")
 ctx = [c["text"] for c in generate("How long is the return window for footwear?")["contexts"]]
-ok = "Apparel and Footwear can be returned within 14 days if unworn and with original tags."
-bad = "You may return electronics within 90 days for any reason."
+ok = "Apparel and Footwear can be returned within 14 days of delivery."     # faithful paraphrase
+bad = "You may return electronics within 90 days for any reason."           # invented number
 print("   supported  :", output_guard(ok, ctx))
 print("   invented   :", output_guard(bad, ctx), "-> refused")
-r = ask_agent("What is your CEO's salary?", session_id="guard-demo-2")
-print("   out-of-scope via pipeline:", r["outcome"], "|", r["answer"])
+for i, q in enumerate(["What is your CEO's salary?", "Who is Nykaa's CEO?"], 2):
+    r = ask_agent(q, session_id=f"guard-demo-{i}")
+    print(f"   out-of-scope via pipeline: {q!r} -> {r['outcome']} | {r['answer']}")

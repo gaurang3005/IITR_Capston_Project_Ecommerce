@@ -1,10 +1,12 @@
 """Task 2 — the Nykaa policy knowledge base, loaded from the knowledge_base/ folder.
-offline files created, this dose following. 
 
-Loads the folder: it reads every .md file in sorted order and skips # title lines. It joins the text into one paragraph and reads the files as UTF-8, so ₹ stays intact.
-Assigns ids: the file name sets the id and topic, so 01_return_window_by_category.md becomes doc_id = "kb-01" with topic = "return_window_by_category"-> for use in later task. 
-Catches mistakes: a badly named file, an empty file or a repeated number stops it with a clear error.
-self-check: checks that there are at least 12 docs with 2 to 5 sentences each, and prints PASS or FAIL
+- Loads the folder: reads every .md file in sorted order as UTF-8 (so ₹ stays intact), skips # title
+  lines and joins the rest into one paragraph.
+- Assigns ids: the file name sets the id and topic, so 01_return_window_by_category.md becomes
+  doc_id="kb-01" with topic="return_window_by_category".
+- Catches mistakes: a badly named file, an empty file or a repeated number stops it with a clear error.
+- Self-check (python knowledge_base.py): at least 12 documents, 2-5 sentences each, and a document for
+  every topic the brief requires; prints PASS or FAIL.
 """
 from __future__ import annotations
 
@@ -14,6 +16,22 @@ from pathlib import Path
 
 KB_DIR = Path(__file__).resolve().parent / "knowledge_base"
 _FILE_RE = re.compile(r"^(\d{2,})_([a-z0-9_]+)$")         # stem -> (number, topic)
+
+# The brief's 12 required topics -> the file topic that must cover each one.
+REQUIRED_TOPICS = {
+    "Return window by product category": "return_window_by_category",
+    "COD refund timelines": "cod_refund_timelines",
+    "Delivery SLAs": "delivery_slas",
+    "Reverse-pickup eligibility": "reverse_pickup_eligibility",
+    "Warranty terms by category": "warranty_terms_by_category",
+    "Order-cancellation policy": "order_cancellation_policy",
+    "Loyalty-points redemption policy": "loyalty_points_redemption",
+    "Payment-failure/retry policy": "payment_failure_retry",
+    "Size-exchange policy": "size_exchange_policy",
+    "Damaged-item claim process": "damaged_item_claim_process",
+    "International shipping restrictions": "international_shipping_restrictions",
+    "Customer-support escalation matrix": "support_escalation_matrix",
+}
 
 
 @dataclass(frozen=True)
@@ -50,15 +68,9 @@ def load_documents(folder: Path = KB_DIR) -> list[Document]:
 
 DOCUMENTS: list[Document] = load_documents()
 
-def get_document(doc_id: str) -> Document:
-    return next(d for d in DOCUMENTS if d.doc_id == doc_id)
-
 
 def get_document(doc_id: str) -> Document:
     return next(d for d in DOCUMENTS if d.doc_id == doc_id)
-
-
-REQUIRED_TOPICS = [d.topic for d in DOCUMENTS]          # one doc per required brief topic
 
 
 def sentences(text: str) -> list[str]:
@@ -74,4 +86,12 @@ if __name__ == "__main__":
         ok = 2 <= n <= 5
         bad += [] if ok else [d.doc_id]
         print(f"  {d.source:<46} -> {d.doc_id}  {n} sentences  {'OK' if ok else 'FAIL'}")
-    print("RESULT:", "PASS" if len(DOCUMENTS) >= 12 and not bad else f"FAIL {bad}")
+
+    print("\nRequired topics (from the brief):")
+    by_topic = {d.topic: d.doc_id for d in DOCUMENTS}
+    missing = [name for name, topic in REQUIRED_TOPICS.items() if topic not in by_topic]
+    for name, topic in REQUIRED_TOPICS.items():
+        print(f"  {name:<38} -> {by_topic.get(topic, 'MISSING')}")
+
+    ok = len(DOCUMENTS) >= 12 and not bad and not missing
+    print("\nRESULT:", "PASS" if ok else f"FAIL sentences={bad} missing_topics={missing}")

@@ -34,8 +34,8 @@ RISK_LEVEL = "Medium"
 
 # ---- Runtime layer: per-request token / cost budget ---------------------------------
 # Sized by governance_demo.py, which meters every model call of one request (crew 4-5, RAG writer
-# 0-1, review 2; see 15_governance.txt). Under MOCK_LLM the largest request sent 3,655 prompt tokens
-# besides the question, repeated the question 7 times and got 644 completion tokens back.
+# 0-1, review 2; see transcripts/15_governance.txt). Under MOCK_LLM the largest request sent 3,740
+# prompt tokens besides the question, repeated the question 7 times and got 681 completion tokens back.
 # The constants round those up. A real model would need re-measuring from the usage it reports.
 PROMPT_OVERHEAD_TOKENS = 3900        # all prompts of one request, minus the question itself
 QUESTION_COPIES = 7                  # times the prompts repeat the question (crew 6, writer 1)

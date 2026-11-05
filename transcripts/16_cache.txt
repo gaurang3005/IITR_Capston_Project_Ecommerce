@@ -1,0 +1,7 @@
+$ python cache_demo.py
+
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+first                      cache_hit=False   271.91 ms   retrieve_calls +1  writer(LLM)_calls +1
+repeat                     cache_hit=True      0.01 ms   retrieve_calls +0  writer(LLM)_calls +0
+same after normalisation   cache_hit=True      0.01 ms   retrieve_calls +0  writer(LLM)_calls +0
+cache stats: {'hits': 2, 'misses': 1, 'size': 1, 'hit_rate': 0.667}

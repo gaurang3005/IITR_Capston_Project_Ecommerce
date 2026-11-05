@@ -1,0 +1,18 @@
+$ python crew_demo.py
+
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+
+Q: How long is the return window for footwear?
+   tools invoked via kickoff(): ['rag_lookup']
+   CrewResponse (validated): {"answer":"Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days. Apparel and Footwear have no ongoing warranty, but a manufacturing defect such as a split sole or a failed seam can be claimed within 30 days of delivery.","sources":["kb-01","kb-05"],"grounded":true,"escalated":false,"confidence":0.8}
+
+Q: What is the status of order ORD0029?
+   tools invoked via kickoff(): ['rag_lookup', 'check_order_status']
+   CrewResponse (validated): {"answer":"Order ORD0029 (Home, order value 24703 INR) is Placed, created 24 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.92 is above the threshold 0.87.","sources":["ORD0029"],"grounded":true,"escalated":true,"confidence":0.6}
+
+Q: Where is my order ORD9999?
+   tools invoked via kickoff(): ['rag_lookup', 'check_order_status']
+   CrewResponse (validated): {"answer":"No such order ORD9999 was found.","sources":[],"grounded":false,"escalated":true,"confidence":0.6}
+
+Task 9 negative test (the validator is load-bearing):
+   REJECTED: 2 validation errors -> [('answer', 'string_too_short'), ('confidence', 'less_than_equal')]

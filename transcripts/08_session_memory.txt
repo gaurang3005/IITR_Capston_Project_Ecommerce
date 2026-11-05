@@ -1,0 +1,32 @@
+$ python memory_demo.py
+
+=== Session A (multi-turn) ===
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:56: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+  return _store.setdefault(session_id, InMemoryChatMessageHistory())
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+user: What is the return window for footwear?   [resolved: What is the return window for footwear?]
+  agent: Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days.
+  sources: ['kb-01']
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:56: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+user: And what about Beauty?   [resolved: What is the return window for Beauty?]
+  agent: Beauty products are returnable within 7 days only while the seal, shrink-wrap and batch sticker are intact, since opened cosmetics cannot be resold for hygiene 
+  sources: ['kb-01', 'kb-04', 'kb-10', 'kb-05']
+user: Check order ORD0039 please   [resolved: Check order ORD0039 please]
+  agent: Order ORD0039 (Footwear, order value 4616 INR) is Placed, created 28 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.9733
+  sources: ['ORD0039']
+user: Is it delayed?   [resolved: Is it delayed? (order ORD0039)]
+  agent: Order ORD0039 (Footwear, order value 4616 INR) is Placed, created 28 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.9733
+  sources: ['ORD0039', 'kb-03', 'kb-02']
+session-A history: 8 messages
+
+=== Session B (fresh conversation, same follow-up words) ===
+user: And what about Beauty?   [resolved: And what about Beauty?]
+  agent: Beauty is the one category where a seal-broken or leaking unit is accepted back despite the hygiene rule, because the fault is ours.
+  sources: ['kb-10']
+user: Is it delayed?   [resolved: Is it delayed?]
+  agent: An order is flagged as a delayed shipment once it crosses its promised window without a delivery scan.
+  sources: ['kb-03']
+session-B history: 4 messages (no footwear, no ORD0039)

@@ -40,7 +40,10 @@ def _answer(masked_text: str, history: list, state: dict) -> str:
 
 
 def ask_agent(user_text: str, session_id: str = "default", trace_id: str | None = None,
-              channel: str = "cli") -> dict[str, Any]:
+              channel: str = "cli", log_sink: dict | None = None) -> dict[str, Any]:
+    """Run one request end to end and write its one JSON-Lines entry. With log_sink (HTTP), the
+    entry's fields go into log_sink instead, and api.py's middleware writes the single line with the
+    HTTP status added."""
     trace_id = trace_id or uuid.uuid4().hex[:12]
     t0 = time.perf_counter()
     guard = guard_request(user_text)
@@ -70,14 +73,18 @@ def ask_agent(user_text: str, session_id: str = "default", trace_id: str | None 
         "draft": state.get("draft"), "resolved_query": state.get("resolved_query"),
         "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
     }
-    log_request(trace_id=trace_id, channel=channel, session_id=session_id,
-                query_masked=guard["text"], pii_counts=guard["pii_counts"],
-                injection=guard["injection"], resolved_query=state.get("resolved_query"),
-                budget=state.get("budget") or state.get("budget_error"),
-                sources=result["sources"], output_guard=state.get("output_guard"),
-                review_approved=(state.get("review") or {}).get("approved"),
-                review_trace=state.get("review_trace"),
-                outcome=outcome, latency_ms=result["latency_ms"])
+    fields = dict(trace_id=trace_id, channel=channel, session_id=session_id,
+                  query_masked=guard["text"], pii_counts=guard["pii_counts"],
+                  injection=guard["injection"], resolved_query=state.get("resolved_query"),
+                  budget=state.get("budget") or state.get("budget_error"),
+                  sources=result["sources"], output_guard=state.get("output_guard"),
+                  review_approved=(state.get("review") or {}).get("approved"),
+                  review_trace=state.get("review_trace"),
+                  outcome=outcome, latency_ms=result["latency_ms"])
+    if log_sink is None:
+        log_request(**fields)
+    else:
+        log_sink.update(fields)
     if error is not None:
         raise error
     return result

@@ -1,0 +1,31 @@
+$ python knowledge_base.py
+
+12 documents loaded from knowledge_base/
+  01_return_window_by_category.md                -> kb-01  5 sentences  OK
+  02_cod_refund_timelines.md                     -> kb-02  5 sentences  OK
+  03_delivery_slas.md                            -> kb-03  5 sentences  OK
+  04_reverse_pickup_eligibility.md               -> kb-04  5 sentences  OK
+  05_warranty_terms_by_category.md               -> kb-05  5 sentences  OK
+  06_order_cancellation_policy.md                -> kb-06  5 sentences  OK
+  07_loyalty_points_redemption.md                -> kb-07  5 sentences  OK
+  08_payment_failure_retry.md                    -> kb-08  5 sentences  OK
+  09_size_exchange_policy.md                     -> kb-09  5 sentences  OK
+  10_damaged_item_claim_process.md               -> kb-10  5 sentences  OK
+  11_international_shipping_restrictions.md      -> kb-11  5 sentences  OK
+  12_support_escalation_matrix.md                -> kb-12  5 sentences  OK
+
+Required topics (from the brief):
+  Return window by product category      -> kb-01
+  COD refund timelines                   -> kb-02
+  Delivery SLAs                          -> kb-03
+  Reverse-pickup eligibility             -> kb-04
+  Warranty terms by category             -> kb-05
+  Order-cancellation policy              -> kb-06
+  Loyalty-points redemption policy       -> kb-07
+  Payment-failure/retry policy           -> kb-08
+  Size-exchange policy                   -> kb-09
+  Damaged-item claim process             -> kb-10
+  International shipping restrictions    -> kb-11
+  Customer-support escalation matrix     -> kb-12
+
+RESULT: PASS

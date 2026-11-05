@@ -1,0 +1,29 @@
+$ python governance_demo.py
+
+APPLICATION LAYER - least autonomy
+   Nykaa Policy Retrieval Agent     tools=['rag_lookup'] allow_delegation=False
+   Nykaa Order Lookup Agent         tools=['check_order_status'] allow_delegation=False
+   Customer Response Composer       tools=[] allow_delegation=False
+   assert_least_autonomy(crew): PASS
+   wire_tool(retrieval_agent, check_order_status) -> BLOCKED: 'Nykaa Policy Retrieval Agent' is not authorised to use 'check_order_status'
+   direct mutation then assert_least_autonomy -> BLOCKED: 'Nykaa Policy Retrieval Agent' may not hold 'check_order_status'
+
+RISK CLASS: Medium
+
+RUNTIME LAYER - budget sizing: every model call of one request
+   calls prompt question x copies completion  total estimate  (est. tokens)
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+       7   2718       11 x 6             443   3161     4677  How long is the return window for footwear?
+       7   3071        9 x 6             339   3410     4663  What is the status of order ORD0029?
+       8   3859       17 x 7             681   4540     4719  Can I return order ORD0021? It is footwear and the size is wrong.
+       7   2803        7 x 6             215   3018     4649  Where is my order ORD9999?
+       6   2256        8 x 5             212   2468     4656  What is Nykaa's CEO's salary?
+   largest: prompt besides the question 3740 -> PROMPT_OVERHEAD_TOKENS=3900, copies 7 -> QUESTION_COPIES=7, completion 681 -> EXPECTED_COMPLETION_TOKENS=700
+   estimate >= measured for every request: True
+
+RUNTIME LAYER - per-request budget
+   normal   : {'estimated_tokens': 4677, 'token_budget': 6000, 'estimated_inr': 2.3385, 'inr_budget': 3.0}
+   oversized: REJECTED -> request needs ~24200 tokens (₹12.1); budget is 6000 tokens (₹3.0)
+E:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:56: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   via pipeline: rejected_budget | crew was never called: True

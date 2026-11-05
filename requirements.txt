@@ -1,9 +1,11 @@
-crewai==1.15.30                 # brings chromadb 1.5.x
+crewai==1.15.30
+chromadb==1.5.9                 # vector store, imported directly by rag_core.py (crewai also needs it)
 autogen-agentchat==0.7.5        # Microsoft AutoGen 0.4+ API (RoundRobinGroupChat). NOT `ag2`.
 autogen-core==0.7.5
 googleapis-common-protos<1.70   # resolves crewai(otel) vs autogen-core protobuf clash
 langchain-core==1.7.0
 sentence-transformers>=3.0
 fastapi==0.162.0
-uvicorn[standard]==0.54.0       # includes websockets
+uvicorn[standard]==0.54.0
+websockets==17.3                # ws_client.py (also installed by uvicorn[standard])
 httpx==0.28.1                   # FastAPI TestClient for the API transcript

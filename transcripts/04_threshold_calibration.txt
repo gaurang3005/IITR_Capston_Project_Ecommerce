@@ -1,0 +1,39 @@
+$ python calibrate_threshold.py
+
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+
+=== kb_fixed ===
+IN-SCOPE top-1 similarity
+  0.422  How long is the return window for footwear?
+  0.655  When will I get my COD refund?
+  0.678  What is the delivery time for metro cities?
+  0.747  Can I cancel an order after it has shipped?
+  0.677  How much are 500 loyalty points worth?
+OUT-OF-SCOPE top-1 similarity
+  0.169  What is your CEO's salary?
+  0.297  Book me a flight to Delhi tomorrow.
+  0.156  Recommend a good laptop for gaming.
+  0.067  Who founded Nykaa?   (with the brand name: 0.485)
+  0.336  Does Nykaa sell groceries?   (with the brand name: 0.558)
+  0.225  What is Nykaa's share price today?   (with the brand name: 0.500)
+clusters separate: in-scope min 0.422 > out-of-scope max 0.336 (gap 0.087) -> threshold = midpoint = 0.379
+
+=== kb_sentence ===
+IN-SCOPE top-1 similarity
+  0.590  How long is the return window for footwear?
+  0.725  When will I get my COD refund?
+  0.497  What is the delivery time for metro cities?
+  0.727  Can I cancel an order after it has shipped?
+  0.591  How much are 500 loyalty points worth?
+OUT-OF-SCOPE top-1 similarity
+  0.197  What is your CEO's salary?
+  0.266  Book me a flight to Delhi tomorrow.
+  0.148  Recommend a good laptop for gaming.
+  0.085  Who founded Nykaa?   (with the brand name: 0.466)
+  0.309  Does Nykaa sell groceries?   (with the brand name: 0.534)
+  0.260  What is Nykaa's share price today?   (with the brand name: 0.490)
+clusters separate: in-scope min 0.497 > out-of-scope max 0.309 (gap 0.188) -> threshold = midpoint = 0.403
+
+Thresholds for config.SIMILARITY_THRESHOLD:
+  {"kb_fixed": 0.379, "kb_sentence": 0.403}
+  currently in config.py: {'kb_fixed': 0.379, 'kb_sentence': 0.403}

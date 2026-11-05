@@ -1,0 +1,14 @@
+$ python review_demo.py
+
+Could not reach the Hub (Cannot reach https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable.). Using cached commit hash for 'sentence-transformers/all-MiniLM-L6-v2'.
+A) query: How long is the return window for footwear?
+   draft         : Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days. Apparel and Footwear have no ongoing warranty, but a manufacturing defect such as a split sole or a failed seam can be claimed within 30 days of delivery.
+   message trace : ['TextMessage:user', 'TextMessage:Policy_Compliance_Reviewer', 'StructuredMessage[ReviewVerdict]:Final_Editor']
+   verdict       : {'approved': True, 'final_answer': 'Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days. Apparel and Footwear have no ongoing warranty, but a manufacturing defect such as a split sole or a failed seam can be claimed within 30 days of delivery.', 'reason': 'Every sentence is supported by the retrieved context.'}
+   approved unchanged: True
+
+B) query: When will I get my COD refund?
+   draft         : If a COD refund has not arrived 10 business days after the quality check cleared, support raises a payment trace with the bank. A prepaid cancellation is refunded in full to the original instrument within 3 to 5 business days, while a COD cancellation needs no refund because nothing was paid. Once the returned parcel reaches our warehouse and passes quality check, the refund is initiated within 2 business days and credited in 5 to 7 business days. An approved claim is settled as a free replacement where stock exists, or as a full refund including any shipping fee, within 3 to 5 business days of approval. COD refunds are always credited within 24 hours.
+   message trace : ['TextMessage:user', 'TextMessage:Policy_Compliance_Reviewer', 'StructuredMessage[ReviewVerdict]:Final_Editor']
+   verdict       : {'approved': False, 'final_answer': 'If a COD refund has not arrived 10 business days after the quality check cleared, support raises a payment trace with the bank. A prepaid cancellation is refunded in full to the original instrument within 3 to 5 business days, while a COD cancellation needs no refund because nothing was paid. Once the returned parcel reaches our warehouse and passes quality check, the refund is initiated within 2 business days and credited in 5 to 7 business days. An approved claim is settled as a free replacement where stock exists, or as a full refund including any shipping fee, within 3 to 5 business days of approval.', 'reason': "Removed 1 unsupported claim(s): ['COD refunds are always credited within 24 hours.']"}
+   revised: True | injected claim removed: True

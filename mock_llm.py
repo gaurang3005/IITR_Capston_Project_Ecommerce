@@ -4,7 +4,7 @@ What CrewAI actually sends a BaseLLM that returns supports_function_calling() ==
 (verified on crewai 1.15.30 by printing `messages`):
   * tools=None and available_functions=None. The tool list is NOT passed as an argument.
     It is printed into the SYSTEM message as "Tool Name: X / Tool Arguments: {json schema}".
-  * for an agent with tools, the same system m  essage contains the ReAct template, including
+  * for an agent with tools, the same system message contains the ReAct template, including
     the literal line "Observation: the result of the action"         <- Pitfall 1 bait
   * after a tool runs, CrewAI appends an ASSISTANT message = our own text +
     "\\nObservation: <real tool output>"
@@ -161,7 +161,8 @@ class MockReActLLM(BaseLLM):
             for row in policy.group("body").strip().splitlines():
                 m = re.match(r"- \((kb-\d+)\) (.*)", row)
                 if m:
-                    sources.append(m.group(1))
+                    if m.group(1) not in sources:          # a doc can supply several sentences
+                        sources.append(m.group(1))
                     lines.append(m.group(2))
             grounded = True
         if not lines:
