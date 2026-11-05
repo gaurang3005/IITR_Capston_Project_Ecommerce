@@ -315,3 +315,44 @@ Task 9 negative test (the validator is load-bearing):
 
 
 *-The Lookup agent calls check_order_status (it declares record_id) only when the question carries an order id, and otherwise answers NO_ORDER_ID_GIVEN. A name-substring router would have sent the order id to rag_lookup. An unknown order (ORD9999) is reported as not found and marked escalated, so a human checks it.
+
+
+----------------------------------------------------------------------------
+Task-8 Session memory with RunnableWithMessageHistory, around the real agent
+-----------------------------------------------------------------------------
+LangChain session memory: a follow-up is understood within its session and not in a fresh one
+
+file: memory_chat.py, memory_demo.py, agent_service.py
+
+output of memory_demo.py
+=== Session A (multi-turn) ===
+e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:24: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+  return _store.setdefault(session_id, InMemoryChatMessageHistory())
+Loading weights: 100%|█████████████████████████| 103/103 [00:00<00:00, 7372.87it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+user: What is the return window for footwear?   [resolved: What is the return window for footwear?]
+  agent: - Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days. - Apparel and Footwear have no ongo
+  sources: ['kb-01', 'kb-05']
+e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:24: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+user: And what about Beauty?   [resolved: What is the return window for Beauty?]
+  agent: - Beauty products are returnable within 7 days only while the seal, shrink-wrap and batch sticker are intact, since opened cosmetics cannot be resold for hygien
+  sources: ['kb-01', 'kb-04', 'kb-10', 'kb-05']
+user: Check order ORD0039 please   [resolved: Check order ORD0039 please]
+  agent: Order ORD0039 (Footwear, order value 4616 INR) is Placed, created 28 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.9733
+  sources: ['ORD0039']
+user: Is it delayed?   [resolved: Is it delayed? (order ORD0039)]
+  agent: Order ORD0039 (Footwear, order value 4616 INR) is Placed, created 28 days ago, and the shipment is delayed. This order needs escalation: escalation score 0.9733
+  sources: ['ORD0039', 'kb-03', 'kb-02']
+session-A history: 8 messages
+
+=== Session B (fresh conversation, same follow-up words) ===
+user: And what about Beauty?   [resolved: And what about Beauty?]
+  agent: - Beauty is the one category where a seal-broken or leaking unit is accepted back despite the hygiene rule, because the fault is ours. - Beauty products carryn
+  sources: ['kb-10', 'kb-05']
+user: Is it delayed?   [resolved: Is it delayed?]
+  agent: - An order is flagged as a delayed shipment once it crosses its promised window without a delivery scan.
+  sources: ['kb-03']
+session-B history: 4 messages (no footwear, no ORD0039)
