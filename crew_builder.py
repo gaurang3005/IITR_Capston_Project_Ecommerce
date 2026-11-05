@@ -11,6 +11,9 @@ from mock_llm import COMPOSE_MARKER, get_crew_llm
 from schemas import CrewResponse
 from tools import OrderStatusTool, RAGLookupTool
 
+from governance import assert_least_autonomy
+
+
 
 def build_crew(llm: BaseLLM | None = None) -> Crew:
     llm = llm or get_crew_llm()
@@ -51,8 +54,8 @@ def build_crew(llm: BaseLLM | None = None) -> Crew:
     crew = Crew(agents=[retrieval_agent, lookup_agent, composer_agent],
                 tasks=[retrieval_task, lookup_task, composer_task],
                 process=Process.sequential, memory=False, cache=False, verbose=False)
+    assert_least_autonomy(crew)                  # Task 15: refuse to build a non-compliant crew
     return crew
-
 
 def run_crew(question: str, llm: BaseLLM | None = None) -> tuple[CrewResponse, list[str]]:
     """kickoff + Task 9 validation in code. Also returns the evidence the answer was built from,

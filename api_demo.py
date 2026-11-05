@@ -15,6 +15,8 @@ r = c.post("/ask", json={"message": "Call me on 9876543210 about order ORD0029, 
 print("POST /ask (PII) ->", r.status_code, r.json()["outcome"], "pii_masked=", r.json()["pii_masked"])
 r = c.post("/ask", json={"message": ""})
 print("POST /ask (empty) ->", r.status_code, "(Pydantic validation)")
+r = c.post("/ask", json={"message": "x " * 4000})
+print("POST /ask (oversized) ->", r.status_code, r.json()["detail"][:90])
 r = c.post("/add-document", json={"doc_id": "kb-13", "topic": "gift_wrap_policy",
            "text": "Gift wrapping costs ₹49 per order. It is available for Beauty and Apparel only."})
 print("POST /add-document ->", r.status_code, r.json())

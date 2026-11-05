@@ -50,6 +50,8 @@ class AddDocumentResponse(BaseModel):
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest) -> AskResponse:          # sync def -> FastAPI runs it in a worker thread
     result = ask_agent(req.message, session_id=req.session_id, channel="http")
+    if result["outcome"] == "rejected_budget":
+        raise HTTPException(status_code=413, detail=result["answer"])
     return AskResponse(**{k: result[k] for k in AskResponse.model_fields})
 
 

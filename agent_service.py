@@ -8,6 +8,7 @@ from typing import Any
 
 import config
 from crew_builder import run_crew
+from governance import BudgetExceeded, enforce_budget
 from guardrails import contains_pii, guard_request, output_guard
 from logging_config import log_request
 from memory_chat import build_chat, get_session_history, resolve_followup
@@ -18,6 +19,8 @@ def _answer(masked_text: str, history: list, state: dict) -> str:
     """Runs inside RunnableWithMessageHistory, so `history` is this session's prior turns."""
     resolved = resolve_followup(masked_text, history)
     state["resolved_query"] = resolved
+    history_text = " ".join(m.content for m in history)
+    state["budget"] = enforce_budget(resolved, history_text)   # raises before any LLM or tool call
 
     response, evidence = run_crew(resolved)
     state["draft"] = response.answer
@@ -53,6 +56,9 @@ def ask_agent(user_text: str, session_id: str = "default", trace_id: str | None 
                                  config={"configurable": {"session_id": session_id}}).content
             if not state.get("grounded", True) or answer == config.SENTINEL_NO_ANSWER:
                 outcome = "refused_ungrounded"
+    except BudgetExceeded as exc:
+        outcome, answer = "rejected_budget", f"Request rejected: {exc}"
+        state["budget_error"] = str(exc)
     except Exception as exc:                 # still write the one log line, then re-raise below
         outcome, answer, error = f"error:{type(exc).__name__}", "", exc
 
@@ -67,6 +73,7 @@ def ask_agent(user_text: str, session_id: str = "default", trace_id: str | None 
     log_request(trace_id=trace_id, channel=channel, session_id=session_id,
                 query_masked=guard["text"], pii_counts=guard["pii_counts"],
                 injection=guard["injection"], resolved_query=state.get("resolved_query"),
+                budget=state.get("budget") or state.get("budget_error"),
                 sources=result["sources"], output_guard=state.get("output_guard"),
                 review_approved=(state.get("review") or {}).get("approved"),
                 review_trace=state.get("review_trace"),

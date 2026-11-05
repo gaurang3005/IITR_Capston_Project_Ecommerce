@@ -60,3 +60,8 @@ BLOCKED_ANSWER = "I can't help with that request."
 
 # --- structured logging (Task 12) ---
 LOG_DIR = ROOT / "logs"
+
+# --- governance (Task 15) ---
+MAX_TOKENS_PER_REQUEST = 6000        # whole request, every model call; largest measured: 4,418
+INR_PER_1K_TOKENS = 0.50             # illustrative rate for a cost estimate (not a real price)
+MAX_INR_PER_REQUEST = 3.00           # = 6000 tokens at the rate above

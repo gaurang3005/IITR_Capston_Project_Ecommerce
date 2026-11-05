@@ -570,3 +570,51 @@ The review runs inside the pipeline (ask_agent() in agent_service.py) after the 
       message trace: ['TextMessage:user', 'TextMessage:Policy_Compliance_Reviewer', 'StructuredMessage[ReviewVerdict]:Final_Editor']
       verdict: {'approved': False, 'final_answer': 'Apparel and Footwear may be returned within 14 days of delivery, Home items within 10 days, and Electronics within 7 days.', 'reason': "Removed 1 unsupported claim(s): ['Electronics can also be returned within 60 days for any reason.']"}
       revised: True
+
+
+
+---------------------------------------------------------------
+Task 15 : The four-layer AI-governance model
+---------------------------------------------------------------
+
+files: governance.py, governance_demo.py, other files edited to support the task. 
+
+   Least autonomy in practice. The order-lookup capability is the only tool in this system that reads a specific customer's record. It is wired to agent, the Nykaa Order Lookup Agent. The Retrieval Agent's toolset is [rag_lookup], the Composer's is empty, and no agent may delegate (allow_delegation=False), so there is no indirect path to the tool either. assert_least_autonomy() runs inside build_crew() and turns that arrangement into an executable invariant, and wire_tool() refuses the order tool for any other agent.further we can give the tool to a second agent only by explicitly widening AUTHORISED_AGENTS: a visible, reviewable change rather than a silent drift.
+
+   Risk level: Medium. This is the "customer support tickets" workload, so it is Medium. It is not Low, because it makes per-customer statements about order status and value that can be wrong and can trigger escalations. It is not High, because it reads no medical data and makes no hiring decisions. Its one financial attribute (order value) is read-only. It cannot move money, issue refunds or change an order, and every draft passes an independent review before it ships. Medium is what justifies the controls applied: PII masking, a groundedness refusal, independent review, a per-request cost cap and an audit trail. It also explains why each answer does not need a human sign-off. That sign-off is triggered only by the escalation score.
+
+   - enforce_budget() in governance.py computes:
+         tokens = PROMPT_OVERHEAD_TOKENS + QUESTION_COPIES * est(user_text) + est(history) + EXPECTED_COMPLETION_TOKENS
+         inr    = tokens / 1000 * INR_PER_1K_TOKENS
+         reject (BudgetExceeded) if tokens > MAX_TOKENS_PER_REQUEST or inr > MAX_INR_PER_REQUEST
+
+*output of governance_demo.py
+
+      APPLICATION LAYER - least autonomy
+      Nykaa Policy Retrieval Agent     tools=['rag_lookup'] allow_delegation=False
+      Nykaa Order Lookup Agent         tools=['check_order_status'] allow_delegation=False
+      Customer Response Composer       tools=[] allow_delegation=False
+      assert_least_autonomy(crew): PASS
+      wire_tool(retrieval_agent, check_order_status) -> BLOCKED: 'Nykaa Policy Retrieval Agent' is not authorised to use 'check_order_status'
+      direct mutation then assert_least_autonomy -> BLOCKED: 'Nykaa Policy Retrieval Agent' may not hold 'check_order_status'
+
+   RISK CLASS: Medium
+
+   RUNTIME LAYER - budget sizing: every model call of one request
+      calls prompt question x copies completion  total estimate  (est. tokens)
+   Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 4735.69it/s]
+   Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+         7   2725       11 x 6             447   3172     4677  How long is the return window for footwear?
+         7   3071        9 x 6             339   3410     4663  What is the status of order ORD0029?
+         8   3909       17 x 7             685   4594     4719  Can I return order ORD0021? It is footwear and the size is wrong.
+         7   2803        7 x 6             215   3018     4649  Where is my order ORD9999?
+         7   2441        8 x 6             310   2751     4656  What is Nykaa's CEO's salary?
+      largest: prompt besides the question 3790 -> PROMPT_OVERHEAD_TOKENS=3900, copies 7 -> QUESTION_COPIES=7, completion 685 -> EXPECTED_COMPLETION_TOKENS=700
+      estimate >= measured for every request: True
+
+   RUNTIME LAYER - per-request budget
+      normal   : {'estimated_tokens': 4677, 'token_budget': 6000, 'estimated_inr': 2.3385, 'inr_budget': 3.0}
+      oversized: REJECTED -> request needs ~24200 tokens (₹12.1); budget is 6000 tokens (₹3.0)
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:53: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+   chat = build_chat(lambda text, hist: _answer(text, hist, state))
+      via pipeline: rejected_budget | crew was never called: True
