@@ -618,3 +618,21 @@ files: governance.py, governance_demo.py, other files edited to support the task
    e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:53: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
    chat = build_chat(lambda text, hist: _answer(text, hist, state))
       via pipeline: rejected_budget | crew was never called: True
+
+
+---------------------------------------------------------------
+Task 16: Response caching at the grounded-generation step
+---------------------------------------------------------------
+- **What:** in-memory LRU cache (`cache.py`, `GenerationCache`, max 256) on the grounded-generation step in `rag_core.py`.
+- **Key:** (collection, normalised query). Normalising lowercases the text, strips punctuation and collapses whitespace, so "How long is the return window for FOOTWEAR??" hits the same entry.
+- **Not cached:** order status (`check_order_status`). It is live data, and a cached "Shipped" would go stale. Only policy answers are cached.
+- **Invalidation:** rebuilding the knowledge base clears the cache.
+- **Evidence** 
+*output of cache_demo.py
+
+   Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 4603.04it/s]
+   Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+   first                      cache_hit=False  1481.48 ms   retrieve_calls +1  writer(LLM)_calls +1
+   repeat                     cache_hit=True      0.01 ms   retrieve_calls +0  writer(LLM)_calls +0
+   same after normalisation   cache_hit=True      0.01 ms   retrieve_calls +0  writer(LLM)_calls +0
+   cache stats: {'hits': 2, 'misses': 1, 'size': 1, 'hit_rate': 0.667}

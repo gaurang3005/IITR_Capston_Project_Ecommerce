@@ -1,4 +1,4 @@
-"""Task 3 — chunking, embedding, two Chroma collections and retrieval, grounded generation."""
+"""Tasks 3, 4 and 16 — chunking, embedding, two Chroma collections, grounded generation, cache."""
 from __future__ import annotations
 
 import re
@@ -8,6 +8,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 import config
+from cache import GenerationCache
 from knowledge_base import DOCUMENTS
 
 
@@ -103,12 +104,17 @@ def index_collection(name: str, strategy: str) -> int:
 
 
 def build_both() -> dict[str, int]:
-    return {config.COLLECTION_FIXED: index_collection(config.COLLECTION_FIXED, "fixed"),
-            config.COLLECTION_SENTENCE: index_collection(config.COLLECTION_SENTENCE, "sentence")}
+    counts = {config.COLLECTION_FIXED: index_collection(config.COLLECTION_FIXED, "fixed"),
+              config.COLLECTION_SENTENCE: index_collection(config.COLLECTION_SENTENCE, "sentence")}
+    CACHE.clear()                          # a KB change invalidates every cached answer
+    return counts
 
 
 # ---- retrieval ------------------------------------------------------------------
+STATS = {"retrieve_calls": 0, "writer_calls": 0}      # proves cache hits skip real work
+
 def retrieve(query: str, collection_name: str, k: int = config.TOP_K) -> list[dict]:
+    STATS["retrieve_calls"] += 1
     res = _collection(collection_name).query(
         query_embeddings=embed([query]), n_results=k,
         include=["documents", "metadatas", "distances"])
@@ -116,6 +122,7 @@ def retrieve(query: str, collection_name: str, k: int = config.TOP_K) -> list[di
              "distance": dist, "similarity": 1.0 - dist}
             for cid, text, meta, dist in zip(res["ids"][0], res["documents"][0],
                                              res["metadatas"][0], res["distances"][0])]
+
 def top1_similarity(query: str, collection_name: str) -> float:
     return retrieve(query, collection_name, k=1)[0]["similarity"]
 
@@ -126,6 +133,7 @@ GroundedWriter = Callable[[str, list[dict]], str]
 
 def mock_extractive_writer(query: str, contexts: list[dict]) -> str:
     """MOCK_LLM writer: quotes only retrieved chunk text, best first, one line per doc (its top chunk)."""
+    STATS["writer_calls"] += 1
     lines, seen = ["Based on Nykaa policy documents:"], set()
     for c in contexts:
         if c["doc_id"] in seen:
@@ -142,19 +150,27 @@ def _writer() -> GroundedWriter:
 #    return real_grounded_writer
 
 
+CACHE = GenerationCache()
+
+
 def generate(query: str, collection_name: str = config.RECOMMENDED_COLLECTION) -> dict:
-    """Retrieve -> similarity gate -> write."""
+    """Retrieve -> similarity gate -> write. Cached per (collection, normalised query) (Task 16)."""
+    hit = CACHE.get(collection_name, query)
+    if hit is not None:
+        return {**hit, "cache_hit": True}
     hits = retrieve(query, collection_name)
     top = hits[0]["similarity"] if hits else 0.0
     threshold = config.SIMILARITY_THRESHOLD[collection_name]
     grounded = top >= threshold
     # Only chunks that themselves clear the threshold are allowed into the answer.
     supporting = [h for h in hits if h["similarity"] >= threshold] if grounded else []
-    return {
+    result = {
         "answer": _writer()(query, supporting) if grounded else config.SENTINEL_NO_ANSWER,
         "grounded": grounded, "top_similarity": round(top, 4), "threshold": threshold,
-        "contexts": supporting, "all_hits": hits,
+        "contexts": supporting, "all_hits": hits, "cache_hit": False,
     }
+    CACHE.put(collection_name, query, result)
+    return result
 
 
 if __name__ == "__main__":

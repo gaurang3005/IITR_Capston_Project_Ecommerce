@@ -12,6 +12,7 @@ from governance import (EXPECTED_COMPLETION_TOKENS, PROMPT_OVERHEAD_TOKENS, QUES
                         RISK_LEVEL, BudgetExceeded, LeastAutonomyViolation, assert_least_autonomy,
                         enforce_budget, estimate_tokens, wire_tool)
 from tools import OrderStatusTool
+from cache import GenerationCache
 
 
 def _text(messages) -> str:
@@ -24,9 +25,10 @@ def _text(messages) -> str:
 @contextlib.contextmanager
 def metered(calls: list):
     """Measurement only: record (prompt, completion) of every model call of a request (crew LLM,
-    RAG writer, both review agents). Restores the originals afterwards."""
+    RAG writer, both review agents), with an empty cache so the writer always runs. Restores the
+    originals afterwards."""
     crew_call, review_create = mock_llm.MockReActLLM.call, review_stage.MockReviewClient.create
-    writer = rag_core.mock_extractive_writer
+    writer, cache = rag_core.mock_extractive_writer, rag_core.CACHE
 
     def metered_crew(self, messages, *args, **kwargs):
         out = crew_call(self, messages, *args, **kwargs)
@@ -46,12 +48,12 @@ def metered(calls: list):
         return out
 
     mock_llm.MockReActLLM.call, review_stage.MockReviewClient.create = metered_crew, metered_review
-    rag_core.mock_extractive_writer = metered_writer
+    rag_core.mock_extractive_writer, rag_core.CACHE = metered_writer, GenerationCache()
     try:
         yield
     finally:
         mock_llm.MockReActLLM.call, review_stage.MockReviewClient.create = crew_call, review_create
-        rag_core.mock_extractive_writer = writer
+        rag_core.mock_extractive_writer, rag_core.CACHE = writer, cache
 
 
 crew = build_crew()
