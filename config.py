@@ -54,3 +54,7 @@ os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
 # default, and a MOCK_LLM run never reads it.
 REAL_LLM_MODEL = os.getenv("REAL_LLM_MODEL", "")
 
+
+# --- guardrails (Task 10) ---
+BLOCKED_ANSWER = "I can't help with that request."
+

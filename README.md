@@ -324,7 +324,7 @@ LangChain session memory: a follow-up is understood within its session and not i
 
 file: memory_chat.py, memory_demo.py, agent_service.py
 
-output of memory_demo.py
+*output of memory_demo.py
 === Session A (multi-turn) ===
 e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:24: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
   chat = build_chat(lambda text, hist: _answer(text, hist, state))
@@ -356,3 +356,44 @@ user: Is it delayed?   [resolved: Is it delayed?]
   agent: - An order is flagged as a delayed shipment once it crosses its promised window without a delivery scan.
   sources: ['kb-03']
 session-B history: 4 messages (no footwear, no ORD0039)
+
+----------------------------------------------------------------------------
+Task-9: Add structured output schema. 
+-----------------------------------------------------------------------------
+
+Every crew answer must validate against `CrewResponse` in `schemas.py`: `answer` (non-empty), `sources`, `grounded`, `escalated` and `confidence` (0–1). The Composer's task sets `output_pydantic=CrewResponse`, and `run_crew()` validates the result again in code, so a bad response raises `ValidationError`. 
+
+task-7 shows an invalid payload rejected with 2 validation errors.
+
+----------------------------------------------------------------------------
+Task-10: Add guardrails
+-----------------------------------------------------------------------------
+Three guards, each demonstrated firing on a deliberate test case. All of them  in guardrails.py.
+
+1)Input — PII masking (fixed-format fields only) 2). Input — prompt-injection detection 3). Output — groundedness gate
+
+- The refusal text for a blocked request added in a new section at the end of config.py:
+- crew_builder.py--> run_crew() now returns the Retrieval and Lookup task outputs
+- agent_service.py masks and screens the input before memory sees it, and checks the answer before it is returned. It also reports an outcome for every request. 
+
+
+*output of guardrails_demo.py
+1) INPUT PII MASKING (phone + card last-4; name/address declared out of scope)
+   model sees: Hi, I'm Test User. Call me on [PHONE_REDACTED]; my card ending [CARD_LAST4_REDACTED] was charged twice. 
+   counts: {'card_number': 0, 'card_last4': 1, 'phone': 1}
+
+2) PROMPT-INJECTION DETECTION
+   {'is_injection': True, 'pattern': 'Ignore all previous instructions'}
+   pipeline outcome: blocked_injection | answer: I can't help with that request.
+   false positive on a customer named Dan: False
+
+3) OUTPUT GROUNDEDNESS
+Loading weights: 100%|██████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 3641.66it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+   supported  : {'grounded': True, 'supported_ratio': 1.0, 'unsupported': [], 'pii_in_output': False}
+   invented   : {'grounded': False, 'supported_ratio': 0.0, 'unsupported': ['You may return electronics within 90 days for any reason.'], 'pii_in_output': False} -> refused
+e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:39: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+  chat = build_chat(lambda text, hist: _answer(text, hist, state))
+e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+  return _store.setdefault(session_id, InMemoryChatMessageHistory())
+   out-of-scope via pipeline: refused_ungrounded | I don't have grounded information to answer that. Please contact Nykaa customer support so a human can help.

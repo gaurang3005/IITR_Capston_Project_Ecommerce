@@ -54,12 +54,15 @@ def build_crew(llm: BaseLLM | None = None) -> Crew:
     return crew
 
 
-def run_crew(question: str, llm: BaseLLM | None = None) -> CrewResponse:
-    """kickoff + Task 9 validation in code."""
+def run_crew(question: str, llm: BaseLLM | None = None) -> tuple[CrewResponse, list[str]]:
+    """kickoff + Task 9 validation in code. Also returns the evidence the answer was built from,
+    for the output guard: the Retrieval and Lookup task outputs (policy text, order record)."""
     out = build_crew(llm).kickoff(inputs={"question": question})
     if out.pydantic is not None:                             # CrewAI already parsed it
         payload = out.pydantic.model_dump_json()
     else:                                                    # fall back to the raw text's JSON
         found = re.search(r"\{.*\}", out.raw, re.S)
         payload = found.group(0) if found else "{}"
-    return CrewResponse.model_validate_json(payload)         # raises ValidationError if not
+    response = CrewResponse.model_validate_json(payload)     # raises ValidationError if not
+    evidence = [out.tasks_output[0].raw, out.tasks_output[1].raw]
+    return response, evidence

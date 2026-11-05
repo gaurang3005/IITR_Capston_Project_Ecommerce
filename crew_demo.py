@@ -7,7 +7,7 @@ from schemas import CrewResponse
 for q in ["How long is the return window for footwear?", "What is the status of order ORD0029?",
           "Where is my order ORD9999?"]:
     llm = MockReActLLM()
-    resp = run_crew(q, llm)
+    resp,_ = run_crew(q, llm)
     print(f"\nQ: {q}\n   tools invoked via kickoff(): {llm.tool_actions}")
     print("   CrewResponse (validated):", resp.model_dump_json())
 
@@ -18,3 +18,4 @@ try:
 except ValidationError as e:
     print(f"   REJECTED: {e.error_count()} validation errors ->",
           [(err['loc'][0], err['type']) for err in e.errors()])
+
