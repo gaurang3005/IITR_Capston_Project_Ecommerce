@@ -58,3 +58,5 @@ REAL_LLM_MODEL = os.getenv("REAL_LLM_MODEL", "")
 # --- guardrails (Task 10) ---
 BLOCKED_ANSWER = "I can't help with that request."
 
+# --- structured logging (Task 12) ---
+LOG_DIR = ROOT / "logs"

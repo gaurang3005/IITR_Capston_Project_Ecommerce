@@ -264,7 +264,7 @@ Higher P+R on this sample: kb_sentence
 ---------------------------------------------------------------
 Task 6 — Tools.py --> check_order_status with a designed escalation score
 ---------------------------------------------------------------
-I recommend escalation when the score is at or above 0.87. That is a delayed order at the 75th percentile of days_since_created in my data (20.25 days): 0.6 + 0.4 * (20.25 / 30) = 0.87. On-time orders cannot exceed 0.40, so the threshold escalates 2 of the 10 delayed orders (ORD0029 and ORD0039) instead of all 10 (transcripts/06_order_tool.txt). 
+I recommend escalation when the score is at or above 0.87. That is a delayed order at the 75th percentile of days_since_created in my data (20.25 days): 0.6 + 0.4 * (20.25 / 30) = 0.87. On-time orders cannot exceed 0.40, so the threshold escalates 2 of the 10 delayed orders (ORD0029 and ORD0039) instead of all 10 
 
 
 age              = clip(days_since_created, 0, 30) / 30
@@ -403,9 +403,9 @@ e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDe
 *PART-III
 ************************
 
-----------------------------------------------------------------------------
+---------------------------------------------------------------
 Task-11: Deploy via FastAPI (2+ HTTP endpoints + 1 WebSocket)
------------------------------------------------------------------------------
+---------------------------------------------------------------
 file: api.py ; api_demo.py
 
 - session_id is created per WebSocket connection, not passed by the client. That is deliberate: a client cannot hijack or collide with another conversation's memory.
@@ -447,3 +447,56 @@ file: api.py ; api_demo.py
 
 The second client was still served after the first one vanished mid-turn. That is the "survives a disconnect" evidence.
 
+---------------------------------------------------------------
+Task 12 — Structured JSON-Lines logging
+---------------------------------------------------------------
+
+One JSON object per line, per request, with a trace id and timing: the ELK-friendly shape. The non-negotiable rule: the logged request text must never contain an unmasked fixed-format PII value. So the logger is fed the masked text, and the logger masks every string again as defence in depth.
+
+ask_agent() now creates the trace id, times the request and writes exactly one log line, even when something fails. updated agent_service.py
+
+The API returns the trace id to the client, tags each request with its channel (http or ws), and logs /add-document and every WebSocket disconnect. updated api.py
+
+api_demo.py modified to starts with an empty log and, at the end, reads it back. It checks that every line has a trace_id, that the disconnect was logged, and that the raw phone and card digits never reached disk.
+
+*output of api_demo.py
+   GET /health -> {'status': 'ok', 'documents': 12, 'mock_llm': True}
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:47: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+   chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\memory_chat.py:18: LangChainDeprecationWarning: The class `InMemoryChatMessageHistory` was deprecated in LangChain 1.6.4 and will be removed in 2.0.0 See the short-term memory documentation for recommended alternatives: https://docs.langchain.com/oss/python/langchain/short-term-memory
+   return _store.setdefault(session_id, InMemoryChatMessageHistory())
+   Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 3843.47it/s]
+   Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+   POST /ask -> 200 {'outcome': 'answered', 'sources': ['kb-07'], 'grounded': True}
+   e:\Goole_Drive\Git\IITR_Capston_Project_Ecommerce\agent_service.py:47: LangChainDeprecationWarning: RunnableWithMessageHistory is deprecated. Use LangGraph's built-in persistence instead.
+   chat = build_chat(lambda text, hist: _answer(text, hist, state))
+   POST /ask (PII) -> 200 answered pii_masked= True
+   POST /ask (empty) -> 422 (Pydantic validation)
+   POST /add-document -> 200 {'doc_id': 'kb-13', 'chunks_indexed': {'kb_fixed': 51, 'kb_sentence': 62}}
+
+   WebSocket: client 1 does two turns (memory), then disconnects mid-conversation
+      {'type': 'hello', 'session_id': 'ws-89aa55ee'}
+      turn1: ['kb-01', 'kb-05']
+      turn2: ['kb-01', 'kb-04', 'kb-10', 'kb-13']
+      bad frame: {'type': 'error', 'detail': 'send JSON like {"message": "..."}'}
+      client 1 closed the socket
+      client 2 still served: answered
+
+   logs/app.jsonl: 8 lines, every line has trace_id: True
+   ws_disconnect logged: True
+   raw '9876543210' on disk: False | raw 'ending 4321' on disk: False
+   masked line: {"trace_id": "e0aeed617c77", "query_masked": "Call me on [PHONE_REDACTED] about order ORD0029, card ending [CARD_LAST4_REDACTED]", "pii_counts": {"card_number": 0, "card_last4": 1, "phone": 1}, "outcome": "answered", "latency_ms": 148.0}
+
+The logged line holds only [PHONE_REDACTED] and [CARD_LAST4_REDACTED]. Running ws_client.py against the server again
+*output of ws_client.py
+   c1 {'type': 'hello', 'session_id': 'ws-7fd9be12'}
+   c1 answer: answered
+   c1 disconnected mid-conversation
+   c2 answer: answered
+  
+   The server now writes a ws_disconnect line to logs/app.jsonl when the first client vanishes mid-turn (close code 1006, no close frame):
+      {"ts": "2026-11-05T09:24:36.266+00:00", "trace_id": "ws-89aa55ee", "channel": "ws", "event": "ws_disconnect", "session_id": "ws-89aa55ee", "close_code": 1000, "outcome": "client_disconnected"}
+      {"ts": "2026-11-05T09:24:36.395+00:00", "trace_id": "45da20a9ab7c", "channel": "ws", "session_id": "ws-59f33bfe", "query_masked": "Check order ORD0039", "pii_counts": {"card_number": 0, "card_last4": 0, "phone": 0}, "injection": {"is_injection": false, "pattern": null}, "resolved_query": "Check order ORD0039", "sources": ["ORD0039"], "output_guard": {"grounded": true, "supported_ratio": 1.0, "unsupported": [], "pii_in_output": false}, "outcome": "answered", "latency_ms": 123.4}
+      {"ts": "2026-11-05T09:24:36.395+00:00", "trace_id": "ws-59f33bfe", "channel": "ws", "event": "ws_disconnect", "session_id": "ws-59f33bfe", "close_code": 1000, "outcome": "client_disconnected"}
+
+   
