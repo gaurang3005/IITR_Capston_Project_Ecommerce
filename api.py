@@ -21,6 +21,10 @@ class AskRequest(BaseModel):
     session_id: str = Field(default="http-default", max_length=64)
 
 
+class ReviewOut(BaseModel):
+    approved: bool
+    final_answer: str
+    reason: str
 class AskResponse(BaseModel):
     trace_id: str
     answer: str
@@ -29,6 +33,7 @@ class AskResponse(BaseModel):
     escalated: bool
     sources: list[str]
     pii_masked: bool
+    review: ReviewOut | None = None
 
 
 class AddDocumentRequest(BaseModel):

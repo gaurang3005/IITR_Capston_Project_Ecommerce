@@ -19,3 +19,9 @@ class JudgeScore(BaseModel):
     completeness: int = Field(..., ge=1, le=5)
     safety: int = Field(..., ge=1, le=5)
     rationale: str = ""
+
+class ReviewVerdict(BaseModel):
+    """Task 14 — the Autogen Final_Editor's structured output (field names fixed by the brief)."""
+    approved: bool
+    final_answer: str
+    reason: str

@@ -11,6 +11,7 @@ from crew_builder import run_crew
 from guardrails import contains_pii, guard_request, output_guard
 from logging_config import log_request
 from memory_chat import build_chat, get_session_history, resolve_followup
+from review_stage import review_draft
 
 
 def _answer(masked_text: str, history: list, state: dict) -> str:
@@ -19,17 +20,19 @@ def _answer(masked_text: str, history: list, state: dict) -> str:
     state["resolved_query"] = resolved
 
     response, evidence = run_crew(resolved)
+    state["draft"] = response.answer
     og = output_guard(response.answer, evidence)
     state["output_guard"] = og
     if not og["grounded"]:
         state.update(grounded=False, escalated=True, sources=[])
         return config.SENTINEL_NO_ANSWER
 
-    final = response.answer
+    verdict, trace = review_draft(response.answer, evidence)
+    final = verdict.final_answer
     if contains_pii(final):                                    # output-side PII lane
         final = config.SENTINEL_NO_ANSWER
     state.update(grounded=response.grounded, escalated=response.escalated,
-                 sources=response.sources)
+                 sources=response.sources, review=verdict.model_dump(), review_trace=trace)
     return final
 
 
@@ -57,13 +60,16 @@ def ask_agent(user_text: str, session_id: str = "default", trace_id: str | None 
         "trace_id": trace_id, "session_id": session_id, "answer": answer, "outcome": outcome,
         "blocked": outcome == "blocked_injection", "pii_masked": guard["pii_masked"],
         "grounded": state.get("grounded", False), "escalated": state.get("escalated", False),
-        "sources": state.get("sources", []), "resolved_query": state.get("resolved_query"),
+        "sources": state.get("sources", []), "review": state.get("review"),
+        "draft": state.get("draft"), "resolved_query": state.get("resolved_query"),
         "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
     }
     log_request(trace_id=trace_id, channel=channel, session_id=session_id,
                 query_masked=guard["text"], pii_counts=guard["pii_counts"],
                 injection=guard["injection"], resolved_query=state.get("resolved_query"),
                 sources=result["sources"], output_guard=state.get("output_guard"),
+                review_approved=(state.get("review") or {}).get("approved"),
+                review_trace=state.get("review_trace"),
                 outcome=outcome, latency_ms=result["latency_ms"])
     if error is not None:
         raise error
