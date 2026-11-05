@@ -50,6 +50,9 @@ def load_documents(folder: Path = KB_DIR) -> list[Document]:
 
 DOCUMENTS: list[Document] = load_documents()
 
+def get_document(doc_id: str) -> Document:
+    return next(d for d in DOCUMENTS if d.doc_id == doc_id)
+
 
 def get_document(doc_id: str) -> Document:
     return next(d for d in DOCUMENTS if d.doc_id == doc_id)

@@ -11,3 +11,11 @@ class CrewResponse(BaseModel):
     grounded: bool = Field(..., description="True if the answer is backed by KB text or an order record")
     escalated: bool = Field(..., description="True if a human must follow up")
     confidence: float = Field(..., ge=0.0, le=1.0)
+
+class JudgeScore(BaseModel):
+    """Task 13 — one LLM-as-judge verdict, each property 1-5."""
+    accuracy: int = Field(..., ge=1, le=5)
+    grounding: int = Field(..., ge=1, le=5)
+    completeness: int = Field(..., ge=1, le=5)
+    safety: int = Field(..., ge=1, le=5)
+    rationale: str = ""
